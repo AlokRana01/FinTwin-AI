@@ -1,11 +1,18 @@
 <div align="center">
 
-<img src="assets/logos/1_horizontal.svg" alt="FinTwin AI" width="360"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0F172A,50:1E3A8A,100:00A86B&height=220&section=header&text=FinTwin%20AI&fontSize=60&fontColor=FFFFFF&fontAlignY=35&animation=fadeIn&desc=Your%20Financial%20Life,%20Simulated.&descAlignY=55&descSize=18&descColor=E2E8F0" alt="FinTwin AI banner" width="100%"/>
 
-# FinTwin AI
-### Your Financial Life, Simulated.
+<img src="assets/logos/1_horizontal.svg" alt="FinTwin AI" width="280"/>
+
+<br/>
+
+<a href="https://github.com/AlokRana01/FinTwin-AI">
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&duration=2800&pause=900&color=00A86B&center=true&vCenter=true&width=680&lines=Score+your+financial+health+in+seconds;Forecast+10+years+of+net+worth+with+AI;Old+vs.+New+tax+regime+%E2%80%94+solved+instantly;Get+coached+by+your+own+financial+twin" alt="Typing SVG"/>
+</a>
 
 **An AI-powered financial digital twin that scores your financial health, forecasts your wealth, optimizes your taxes, and coaches your behavior — purpose-built for Indian salaried professionals aged 22–40.**
+
+<br/>
 
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.35+-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
@@ -15,11 +22,25 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-00A86B?style=for-the-badge)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-In%20Progress-F59E0B?style=for-the-badge)](#)
 
-[Overview](#overview) • [Features](#dashboard-modules) • [How It Works](#how-it-works) • [Getting Started](#getting-started) • [Demo](#demo-login) • [Roadmap](#roadmap)
+<br/>
+
+![Stars](https://img.shields.io/github/stars/AlokRana01/FinTwin-AI?style=social)
+![Forks](https://img.shields.io/github/forks/AlokRana01/FinTwin-AI?style=social)
+![Last Commit](https://img.shields.io/github/last-commit/AlokRana01/FinTwin-AI?color=00A86B&label=last%20commit)
+![Repo Size](https://img.shields.io/github/repo-size/AlokRana01/FinTwin-AI?color=blue&label=repo%20size)
+
+<br/>
+
+<a href="#overview">Overview</a> •
+<a href="#dashboard-modules">Features</a> •
+<a href="#how-it-works">How It Works</a> •
+<a href="#getting-started">Getting Started</a> •
+<a href="#demo-login">Demo</a> •
+<a href="#roadmap">Roadmap</a>
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:00A86B,100:1E3A8A&height=3&width=100%25"/>
 
 </div>
-
----
 
 ## Overview
 
@@ -32,7 +53,11 @@ Instead of static budgeting spreadsheets, FinTwin AI answers the questions peopl
 - *"Old tax regime or new — which saves me more this year?"*
 - *"Am I spending more than people like me?"*
 
----
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:00A86B,100:1E3A8A&height=2&width=100%25"/>
+
+</div>
 
 ## How It Works
 
@@ -54,7 +79,11 @@ The Streamlit app loads only the pre-trained model artifacts to score, forecast,
 
 > **Note:** Raw training data is never accessed by the live app. Only pre-trained JSON model files are loaded at runtime.
 
----
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:00A86B,100:1E3A8A&height=2&width=100%25"/>
+
+</div>
 
 ## Dashboard Modules
 
@@ -68,7 +97,11 @@ The Streamlit app loads only the pre-trained model artifacts to score, forecast,
 | **Goal Planner** | Tracks progress toward milestones — home, education, retirement |
 | **AI Behavioral Coach** | Delivers advice tailored to the user's detected financial personality type |
 
----
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:00A86B,100:1E3A8A&height=2&width=100%25"/>
+
+</div>
 
 ## Financial Health Score
 
@@ -85,7 +118,11 @@ The headline **0–100 score** is a weighted composite of six underlying financi
 
 **Grade scale:** `A` 80–100 &nbsp;·&nbsp; `B` 60–79 &nbsp;·&nbsp; `C` 40–59 &nbsp;·&nbsp; `D` below 40
 
----
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:00A86B,100:1E3A8A&height=2&width=100%25"/>
+
+</div>
 
 ## Tech Stack
 
@@ -99,7 +136,11 @@ The headline **0–100 score** is a weighted composite of six underlying financi
 | Visualization | Plotly |
 | LLM / Coaching | Groq API |
 
----
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:00A86B,100:1E3A8A&height=2&width=100%25"/>
+
+</div>
 
 ## Project Structure
 
@@ -148,7 +189,11 @@ FinTwin_AI/
     └── 11_Settings.py
 ```
 
----
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:00A86B,100:1E3A8A&height=2&width=100%25"/>
+
+</div>
 
 ## Getting Started
 
@@ -180,7 +225,11 @@ streamlit run app.py
 
 The app will be available at `http://localhost:8501`.
 
----
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:00A86B,100:1E3A8A&height=2&width=100%25"/>
+
+</div>
 
 ## Demo Login
 
@@ -191,7 +240,11 @@ Try FinTwin AI instantly with the pre-seeded demo account:
 | Email | `demo@fintwin.app` |
 | Password | `Demo@123` |
 
----
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:00A86B,100:1E3A8A&height=2&width=100%25"/>
+
+</div>
 
 ## Roadmap
 
@@ -201,7 +254,11 @@ Try FinTwin AI instantly with the pre-seeded demo account:
 - [ ] Portfolio-level investment tracking
 - [ ] Exportable PDF financial health reports
 
----
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:00A86B,100:1E3A8A&height=2&width=100%25"/>
+
+</div>
 
 ## Contributing
 
@@ -212,7 +269,11 @@ Contributions, issues, and feature requests are welcome. If you'd like to contri
 3. Commit your changes
 4. Open a pull request
 
----
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:00A86B,100:1E3A8A&height=2&width=100%25"/>
+
+</div>
 
 ## License
 
@@ -223,5 +284,11 @@ This project is licensed under the **MIT License** — see [LICENSE](LICENSE) fo
 Copyright © 2026 **Alok Rana**
 
 <sub>Built for a smarter, more transparent approach to personal finance.</sub>
+
+<br/>
+
+[![Back to Top](https://img.shields.io/badge/⬆-Back%20to%20Top-00A86B?style=for-the-badge)](#fintwin-ai)
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:1E3A8A,50:0F172A,100:00A86B&height=120&section=footer&animation=fadeIn"/>
 
 </div>
