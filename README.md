@@ -1,117 +1,140 @@
 <div align="center">
 
-<img src="assets/logos/1_horizontal.svg" width="320" alt="FinTwin AI Logo"/>
+<img src="assets/logos/1_horizontal.svg" alt="FinTwin AI" width="360"/>
 
-<br/>
+# FinTwin AI
+### Your Financial Life, Simulated.
 
-# Financial Digital Twin *(In Progress)*
+**An AI-powered financial digital twin that scores your financial health, forecasts your wealth, optimizes your taxes, and coaches your behavior — purpose-built for Indian salaried professionals aged 22–40.**
 
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.35+-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
 [![XGBoost](https://img.shields.io/badge/XGBoost-ML%20Engine-F7931E?style=for-the-badge)](https://xgboost.readthedocs.io)
 [![SHAP](https://img.shields.io/badge/SHAP-Explainable%20AI-7C3AED?style=for-the-badge)](https://shap.readthedocs.io)
 [![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-00A86B?style=for-the-badge)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-In%20Progress-F59E0B?style=for-the-badge)](#)
 
-> 🧠 **FinTwin AI** simulates your complete financial life — scoring health, forecasting wealth, optimizing taxes,
-> and coaching behavior — all built specifically for **Indian salaried professionals aged 22–40**.
+[Overview](#overview) • [Features](#dashboard-modules) • [How It Works](#how-it-works) • [Getting Started](#getting-started) • [Demo](#demo-login) • [Roadmap](#roadmap)
 
 </div>
 
 ---
 
+## Overview
 
-## ⚙️ How It Works
+FinTwin AI builds a living, data-driven model — a **digital twin** — of a user's financial life. It combines gradient-boosted forecasting, unsupervised behavior clustering, and explainable AI to turn raw income, expense, debt, and goal data into a single, actionable financial health picture.
 
-The app operates in **two clearly separated phases**:
+Instead of static budgeting spreadsheets, FinTwin AI answers the questions people actually ask:
 
-<div align="center">
-
-### 🔁 Phase 1 — Offline Training *(Run Once)*
-<img src="assets/phase1_training_diagram.png" width="85%" alt="Phase 1 — Offline Training Pipeline"/>
-
-### 🚀 Phase 2 — Live Dashboard
-<img src="assets/phase2_live_dashboard_diagram.png" width="75%" alt="Phase 2 — Live Dashboard Runtime"/>
-
-</div>
-
-> 💡 Raw training data is **never accessed** by the live app. Only the pre-trained JSON model files are loaded at runtime.
+- *"How financially healthy am I, really?"*
+- *"What happens to my net worth if I switch jobs, take a loan, or have a child?"*
+- *"Old tax regime or new — which saves me more this year?"*
+- *"Am I spending more than people like me?"*
 
 ---
 
-## 📋 Dashboard Modules
+## How It Works
 
-<div align="center">
+FinTwin AI runs in two clearly separated phases, so the live app never touches raw training data — only pre-trained, versioned model artifacts.
 
-| | Module | Description |
-|:---:|:---|:---|
-| 👤 | **Digital Twin** | Build your financial profile — income, assets, debts, goals |
-| 📊 | **Financial Health** | Get a 0–100 health score with SHAP-powered explanations |
-| 🔮 | **Forecast & Simulation** | Run 10-year what-if projections with XGBoost models |
-| 💸 | **Spending Behavior** | Compare spending patterns against occupation peers |
-| 🏦 | **Tax Intelligence** | Find your optimal Old vs. New tax regime instantly |
-| 🎯 | **Goal Planner** | Track milestones for home, education, or retirement goals |
-| 💬 | **AI Behavioral Coach** | Get advice tailored to your financial personality type |
+### Phase 1 — Offline Training *(run once)*
+Synthetic profiles are generated, engineered into features, and used to train the forecasting, clustering, and explainability models. Outputs are serialized to `data/models/`.
 
-</div>
+<p align="center">
+  <img src="assets/phase1_training_diagram.png" alt="Phase 1 — Offline Training Pipeline" width="720"/>
+</p>
 
----
+### Phase 2 — Live Dashboard *(runtime)*
+The Streamlit app loads only the pre-trained model artifacts to score, forecast, and coach in real time — no raw data dependency, fast cold starts, and reproducible results.
 
-## 🧮 Financial Health Score
+<p align="center">
+  <img src="assets/phase2_live_dashboard_diagram.png" alt="Phase 2 — Live Dashboard Runtime" width="720"/>
+</p>
 
-<div align="center">
-
-Your overall score **(0–100)** is a weighted blend of six financial metrics:
-
-| Metric | 🎯 Benchmark | ⚖️ Weight |
-|:---|:---:|:---:|
-| 💰 Savings Rate | ≥ 30% of income | **25%** |
-| 📉 EMI Burden | ≤ 35% of income | **20%** |
-| 🛡️ Emergency Fund | ≥ 6 months of expenses | **20%** |
-| 📈 SIP Investment | ≥ 15% of income | **15%** |
-| 🏥 Insurance Coverage | Life ≥ 120× salary; Health ≥ ₹5L | **10%** |
-| 🏦 Debt-to-Income | Total debt ≤ 1.5× annual income | **10%** |
-
-**Grade Scale:** &nbsp; 🟢 **A** (80–100) &nbsp;·&nbsp; 🔵 **B** (60–79) &nbsp;·&nbsp; 🟡 **C** (40–59) &nbsp;·&nbsp; 🔴 **D** (< 40)
-
-</div>
+> **Note:** Raw training data is never accessed by the live app. Only pre-trained JSON model files are loaded at runtime.
 
 ---
 
-## 🗂️ Project Structure
+## Dashboard Modules
+
+| Module | What it does |
+|---|---|
+| **Digital Twin** | Builds a structured financial profile — income, assets, debts, and goals |
+| **Financial Health** | Produces a 0–100 health score with SHAP-powered, human-readable explanations |
+| **Forecast & Simulation** | Runs 10-year what-if projections using XGBoost-based forecasting models |
+| **Spending Behavior** | Benchmarks spending patterns against occupation-matched peer cohorts |
+| **Tax Intelligence** | Instantly compares Old vs. New tax regimes to find the optimal choice |
+| **Goal Planner** | Tracks progress toward milestones — home, education, retirement |
+| **AI Behavioral Coach** | Delivers advice tailored to the user's detected financial personality type |
+
+---
+
+## Financial Health Score
+
+The headline **0–100 score** is a weighted composite of six underlying financial metrics:
+
+| Metric | Benchmark | Weight |
+|---|---|---|
+| Savings Rate | ≥ 30% of income | 25% |
+| EMI Burden | ≤ 35% of income | 20% |
+| Emergency Fund | ≥ 6 months of expenses | 20% |
+| SIP Investment | ≥ 15% of income | 15% |
+| Insurance Coverage | Life ≥ 120× salary · Health ≥ ₹5L | 10% |
+| Debt-to-Income Ratio | Total debt ≤ 1.5× annual income | 10% |
+
+**Grade scale:** `A` 80–100 &nbsp;·&nbsp; `B` 60–79 &nbsp;·&nbsp; `C` 40–59 &nbsp;·&nbsp; `D` below 40
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend / App | Streamlit |
+| ML — Forecasting | XGBoost |
+| ML — Explainability | SHAP |
+| ML — Behavior Segmentation | K-Means Clustering |
+| Data Layer | SQLite |
+| Visualization | Plotly |
+| LLM / Coaching | Groq API |
+
+---
+
+## Project Structure
 
 ```
 FinTwin_AI/
-├── 📄 app.py                 # Streamlit entry point & dashboard landing page
-├── ⚙️ config.py              # Tax slabs, economic constants, score weights
-├── 📦 requirements.txt       # Python dependencies
+├── app.py                    # Streamlit entry point & dashboard landing page
+├── config.py                 # Tax slabs, economic constants, score weights
+├── requirements.txt          # Python dependencies
 │
-├── 🎓 training/
-│   └── train_offline.py      # ← Run this FIRST (trains all ML models)
+├── training/
+│   └── train_offline.py      # Run this FIRST — trains all ML models
 │
-├── 📊 data/
+├── data/
 │   ├── generator.py          # Generates 10,000 synthetic Indian profiles
 │   ├── preprocessor.py       # Feature engineering pipeline
-│   └── models/               # Saved model artifact files (.json)
+│   └── models/                # Saved model artifacts (.json)
 │
-├── 🤖 models/
-│   ├── twin_engine.py        # OOP Digital Twin + Health Score formulas
+├── models/
+│   ├── twin_engine.py        # Digital Twin object model + health score formulas
 │   ├── predictor.py          # XGBoost savings & net worth forecaster
 │   ├── clustering.py         # K-Means financial personality detector
 │   └── explainability.py     # SHAP explainer computations
 │
-├── 🛠️ utils/
-│   ├── tax_calculator.py     # Indian Tax Engine (Old vs. New regime)
+├── utils/
+│   ├── tax_calculator.py     # Indian tax engine (Old vs. New regime)
 │   ├── simulator.py          # What-if scenario simulation engine
 │   ├── coach.py              # Personality-driven AI recommendations
 │   └── visualizer.py         # Plotly chart template builders
 │
-├── 💾 database/
+├── database/
 │   ├── schema.sql            # Table & constraint definitions
 │   ├── db_manager.py         # CRUD operations (profiles, goals, ledger)
 │   └── financial_twin.db     # SQLite database file
 │
-└── 📱 pages/
+└── pages/
     ├── 01_Digital_Twin.py
     ├── 02_Financial_Health.py
     ├── 03_Behavior_Analysis.py
@@ -127,45 +150,78 @@ FinTwin_AI/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
+
+### Prerequisites
+- Python 3.9+
+- A [Groq API key](https://console.groq.com) for the AI coaching module
+
+### Installation
 
 ```bash
-# 1. Clone & install dependencies
-git clone https://github.com/your-username/FinTwin_AI.git
-cd FinTwin_AI
+# 1. Clone the repository
+git clone https://github.com/AlokRana01/FinTwin-AI.git
+cd FinTwin-AI
+
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# 2. Configure environment variables
-# Copy template and add your GROQ_API_KEY (and optional SMTP credentials)
+# 3. Configure environment variables
 cp .env.example .env
+# Add your GROQ_API_KEY (and optional SMTP credentials) to .env
 
-# 3. Train models (pre-trained weights are already included in data/models/)
-# Optional: run only if you generate new synthetic data
+# 4. (Optional) Retrain models — pre-trained weights are already included
 # python data/generator.py
 # python training/train_offline.py
 
-# 4. Launch the dashboard
+# 5. Launch the dashboard
 streamlit run app.py
 ```
 
+The app will be available at `http://localhost:8501`.
+
 ---
 
-## 🔑 Demo Login
+## Demo Login
+
+Try FinTwin AI instantly with the pre-seeded demo account:
+
+| Field | Value |
+|---|---|
+| Email | `demo@fintwin.app` |
+| Password | `Demo@123` |
+
+---
+
+## Roadmap
+
+- [ ] Multi-currency support beyond INR
+- [ ] Mobile-responsive dashboard layout
+- [ ] Bank statement auto-import (PDF/CSV parsing)
+- [ ] Portfolio-level investment tracking
+- [ ] Exportable PDF financial health reports
+
+---
+
+## Contributing
+
+Contributions, issues, and feature requests are welcome. If you'd like to contribute:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes
+4. Open a pull request
+
+---
+
+## License
+
+This project is licensed under the **MIT License** — see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-Try it instantly with the pre-seeded demo account:
+Copyright © 2026 **Alok Rana**
 
-| 📧 Email | 🔒 Password |
-|:---:|:---:|
-| `demo@fintwin.app` | `Demo@123` |
+<sub>Built for a smarter, more transparent approach to personal finance.</sub>
 
 </div>
-
----
-
-## 📜 License
-
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
-Copyright © 2026 **Alok Rana**
