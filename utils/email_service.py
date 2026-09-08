@@ -32,15 +32,27 @@ _BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def get_smtp_config() -> dict:
-    """Loads and returns current SMTP configuration from environment."""
+    """Loads and returns current SMTP configuration from environment or st.secrets."""
+    def _get_val(key: str, default: str = "") -> str:
+        val = os.environ.get(key)
+        if val is not None and val != "":
+            return val
+        try:
+            import streamlit as st
+            if hasattr(st, "secrets") and key in st.secrets:
+                return str(st.secrets[key])
+        except Exception:
+            pass
+        return default
+
     return {
-        "host": os.environ.get("SMTP_HOST", "").strip(),
-        "port": int(os.environ.get("SMTP_PORT", "587")),
-        "username": os.environ.get("SMTP_USERNAME", "").strip(),
-        "password": os.environ.get("SMTP_PASSWORD", "").strip(),
-        "from_email": os.environ.get("SMTP_FROM_EMAIL", "noreply@fintwin.app").strip(),
-        "from_name": os.environ.get("SMTP_FROM_NAME", "FinTwin AI").strip(),
-        "base_url": os.environ.get("APP_BASE_URL", "http://localhost:8501").rstrip("/"),
+        "host": _get_val("SMTP_HOST", "").strip(),
+        "port": int(_get_val("SMTP_PORT", "587")),
+        "username": _get_val("SMTP_USERNAME", "").strip(),
+        "password": _get_val("SMTP_PASSWORD", "").strip(),
+        "from_email": _get_val("SMTP_FROM_EMAIL", "noreply@fintwin.app").strip(),
+        "from_name": _get_val("SMTP_FROM_NAME", "FinTwin AI").strip(),
+        "base_url": _get_val("APP_BASE_URL", "http://localhost:8501").rstrip("/"),
     }
 
 

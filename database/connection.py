@@ -47,10 +47,20 @@ def get_db_cursor():
         conn.close()
 
 def _load_dotenv() -> None:
-    """Reads the project-root .env file and injects variables into os.environ.
-    Only sets keys that are not already present, so real environment variables
-    always take precedence over the .env file.
+    """Reads st.secrets (if running under Streamlit) and the project-root .env file,
+    injecting variables into os.environ. Real environment variables always take precedence.
     """
+    # 1. Sync from Streamlit Secrets (for Streamlit Community Cloud)
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets"):
+            for k, v in st.secrets.items():
+                if isinstance(v, (str, int, float)) and k not in os.environ:
+                    os.environ[k] = str(v)
+    except Exception:
+        pass
+
+    # 2. Sync from local .env file
     env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
     if not os.path.exists(env_path):
         return
@@ -71,12 +81,11 @@ def _load_dotenv() -> None:
 
 _load_dotenv()
 
-# Demo account credentials — loaded from environment so they are never hardcoded.
-# Set DEMO_EMAIL and DEMO_PASSWORD in your .env or .streamlit/secrets.toml.
-# The fallback password shown below is intentionally non-functional; it will not
-# match any hash unless you explicitly set the environment variable to this value.
+# Demo account credentials — loaded from environment/secrets so they are never hardcoded.
+# Set DEMO_EMAIL and DEMO_PASSWORD in your .env or Streamlit Cloud Secrets.
+# Defaults to standard demo credentials so the app works seamlessly out-of-the-box.
 DEMO_EMAIL    = os.environ.get("DEMO_EMAIL",    "demo@fintwin.app")
-DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "ChangeMe_SetInEnv!")
+DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "Demo@123")
 
 
 def ensure_demo_user_seeded(cursor):
