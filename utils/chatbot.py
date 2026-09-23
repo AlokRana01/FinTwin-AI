@@ -431,8 +431,8 @@ def _build_system_prompt(twin) -> str:
         "Tax Intelligence, AI Coach, Goal Planner, Explainable AI). "
         "Stay strictly on personal-finance and app-usage topics; if asked something "
         "unrelated, gently steer back. "
-        "Reply in clear, friendly paragraphs or bullet points (usually under 500 words "
-        "unless the user explicitly asks for depth). Use \u20b9 for currency. Never claim to "
+        "Reply in clear, friendly paragraphs or bullet points with complete, thorough explanations. "
+        "Use \u20b9 for currency. Never claim to "
         "move money, place trades, or change account settings \u2014 you only inform and advise. "
         "If you don't have a number you need, say so instead of inventing one."
     )
@@ -548,7 +548,7 @@ def _call_groq(twin, history: list[dict], api_key: str) -> str:
             "model": model,
             "messages": messages,
             "temperature": 0.6,
-            "max_tokens": 1500,
+            "max_tokens": 8192,
         }
         try:
             resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=25)
@@ -583,7 +583,7 @@ def _call_gemini_backend(twin, history: list[dict], api_key: str) -> str:
     payload = {
         "contents": contents,
         "systemInstruction": {"parts": [{"text": _build_system_prompt(twin)}]},
-        "generationConfig": {"temperature": 0.6, "maxOutputTokens": 1500},
+        "generationConfig": {"temperature": 0.6, "maxOutputTokens": 8192},
     }
 
     models_to_try = _get_available_gemini_models(api_key)
@@ -732,13 +732,13 @@ def _inject_css():
     /* ---- Chat panel: Institutional Dark Fintech, right-anchored ---- */
     .st-key-ftw_panel {
         position: fixed !important;
-        bottom: 24px !important;
-        right: 24px !important;
+        bottom: 18px !important;
+        right: 20px !important;
         width: 32vw !important;
         min-width: 440px !important;
         max-width: 530px !important;
-        height: 78vh !important;
-        max-height: 820px !important;
+        height: min(84vh, calc(100vh - 36px)) !important;
+        max-height: calc(100vh - 36px) !important;
         z-index: 999999 !important;
         background: rgba(15, 23, 42, 0.97) !important;
         backdrop-filter: blur(20px) !important;
@@ -746,8 +746,9 @@ def _inject_css():
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 20px !important;
         box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
-        padding: 16px 18px 12px 18px !important;
-        overflow: hidden !important;
+        padding: 14px 18px 10px 18px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
         display: flex !important;
         flex-direction: column !important;
         animation: ftw-pop 0.26s cubic-bezier(0.16, 1, 0.3, 1);
@@ -758,7 +759,7 @@ def _inject_css():
             min-width: 0 !important;
             right: 16px !important;
             bottom: 16px !important;
-            height: 80vh !important;
+            height: calc(100vh - 32px) !important;
             max-height: calc(100vh - 32px) !important;
         }
         .ftw-orb-wrap, .st-key-ftw_toggle_btn { right: 16px !important; bottom: 16px !important; }
@@ -769,19 +770,23 @@ def _inject_css():
     }
 
     /* Clean custom scrollbar */
+    .st-key-ftw_panel::-webkit-scrollbar,
     .ftw-msgs::-webkit-scrollbar,
     .ftw-empty-card::-webkit-scrollbar {
         width: 5px;
     }
+    .st-key-ftw_panel::-webkit-scrollbar-track,
     .ftw-msgs::-webkit-scrollbar-track,
     .ftw-empty-card::-webkit-scrollbar-track {
         background: transparent;
     }
+    .st-key-ftw_panel::-webkit-scrollbar-thumb,
     .ftw-msgs::-webkit-scrollbar-thumb,
     .ftw-empty-card::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.12);
         border-radius: 99px;
     }
+    .st-key-ftw_panel::-webkit-scrollbar-thumb:hover,
     .ftw-msgs::-webkit-scrollbar-thumb:hover,
     .ftw-empty-card::-webkit-scrollbar-thumb:hover {
         background: rgba(255, 255, 255, 0.22);
@@ -789,15 +794,15 @@ def _inject_css():
 
     /* ---- Header Layout & Vertical Alignment ---- */
     .st-key-ftw_panel [data-testid="stHorizontalBlock"]:first-of-type {
-        height: 48px !important;
-        min-height: 48px !important;
-        max-height: 48px !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        max-height: 44px !important;
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
         justify-content: space-between !important;
-        margin-bottom: 12px !important;
-        padding-bottom: 10px !important;
+        margin-bottom: 8px !important;
+        padding-bottom: 8px !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
     .st-key-ftw_panel [data-testid="stHorizontalBlock"]:first-of-type > [data-testid="stColumn"] {
@@ -996,14 +1001,14 @@ def _inject_css():
         overflow-y: auto !important;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
         padding: 6px 4px 10px 2px;
         margin-bottom: 6px;
-        max-height: calc(78vh - 165px) !important;
+        max-height: calc(84vh - 165px) !important;
     }
     @media (min-height: 1000px) {
         .ftw-msgs {
-            max-height: 600px !important;
+            max-height: 640px !important;
         }
     }
     @media (max-width: 900px) {
@@ -1103,8 +1108,8 @@ def _inject_css():
         display: flex;
         flex-direction: column;
         justify-content: center;
-        padding: 8px 4px 6px 4px;
-        max-height: calc(78vh - 165px);
+        padding: 4px 4px 4px 4px;
+        max-height: calc(84vh - 165px);
     }
     .ftw-welcome-badge {
         display: inline-flex;
@@ -1119,7 +1124,7 @@ def _inject_css():
         font-size: 0.74rem;
         font-weight: 600;
         letter-spacing: 0.02em;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         width: fit-content;
     }
     .ftw-welcome-title {
@@ -1135,7 +1140,7 @@ def _inject_css():
         font-size: 0.83rem;
         color: #94A3B8;
         line-height: 1.45;
-        margin: 0 0 10px 0;
+        margin: 0 0 6px 0;
     }
     .ftw-suggestion-label {
         font-family: 'Inter', sans-serif;
@@ -1144,7 +1149,7 @@ def _inject_css():
         text-transform: uppercase;
         letter-spacing: 0.06em;
         color: #64748B;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
         display: flex;
         align-items: center;
         gap: 6px;
@@ -1152,7 +1157,7 @@ def _inject_css():
 
     /* Suggestion Buttons in Streamlit */
     div[class*="st-key-ftw_sugg_"] {
-        margin-bottom: 5px !important;
+        margin-bottom: 3px !important;
     }
     div[class*="st-key-ftw_sugg_"] button {
         background: rgba(30, 41, 59, 0.65) !important;
@@ -1163,9 +1168,9 @@ def _inject_css():
         font-size: 0.82rem !important;
         font-weight: 500 !important;
         text-align: left !important;
-        padding: 7px 12px !important;
-        height: 36px !important;
-        min-height: 36px !important;
+        padding: 6px 12px !important;
+        height: 34px !important;
+        min-height: 34px !important;
         justify-content: flex-start !important;
         transition: all 0.15s ease !important;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
@@ -1195,7 +1200,7 @@ def _inject_css():
         background: transparent !important;
         border: none !important;
         padding: 0 !important;
-        margin-top: 6px !important;
+        margin-top: 4px !important;
         margin-bottom: 2px !important;
     }
     .st-key-ftw_panel input {
@@ -1205,8 +1210,8 @@ def _inject_css():
         color: #F8FAFC !important;
         font-family: 'Inter', sans-serif !important;
         font-size: 0.88rem !important;
-        padding: 9px 14px !important;
-        height: 40px !important;
+        padding: 8px 14px !important;
+        height: 38px !important;
         line-height: 1.4 !important;
         transition: all 0.2s ease !important;
     }
@@ -1249,7 +1254,7 @@ def _inject_css():
         border-radius: 12px !important;
         font-weight: 600 !important;
         font-size: 0.98rem !important;
-        height: 40px !important;
+        height: 38px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -1269,12 +1274,12 @@ def _inject_css():
     /* Trust Disclaimer */
     .ftw-disclaimer {
         font-family: 'Inter', sans-serif;
-        font-size: 0.70rem;
+        font-size: 0.68rem;
         color: #64748B;
         text-align: center;
-        margin-top: 3px;
-        margin-bottom: 0px;
-        line-height: 1.3;
+        margin-top: 2px;
+        margin-bottom: 2px;
+        line-height: 1.25;
     }
 
     /* Flex structure to prevent bottom clipping */
