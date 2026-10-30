@@ -369,9 +369,11 @@ def _build_predictions_and_scenarios_context(twin) -> str:
     
     # 1. Machine Learning Predictions
     try:
-        from models.predictor import FinancialPredictor
-        predictor = FinancialPredictor()
-        predictor.load_only(horizon=6)
+        from utils.cache import get_cached_predictor
+        predictor, loaded = get_cached_predictor(horizon=6)
+        if not loaded:
+            # Fallback if predictor not loaded
+            predictor.load_only(horizon=6)
         pred_6 = predictor.predict(twin, horizon_months=6)
         pred_12 = predictor.predict(twin, horizon_months=12)
         lines.extend([
@@ -453,30 +455,29 @@ def _build_system_prompt(twin) -> str:
         "financial health score, projected savings, and risk level. Cite these metrics directly."
     )
 
-    profile = f"""
+    from utils.privacy import (
+        get_user_privacy_mode,
+        sanitize_financial_profile,
+        sanitize_predictions_and_scenarios,
+        PRIVACY_MODE_MINIMAL,
+    )
+    privacy_mode = get_user_privacy_mode(getattr(twin, "user_id", None))
 
-You ARE currently chatting with a logged-in, active user. Use the data below to fully
-personalise every answer. Do not invent figures that aren't listed here or derivable
-from them.
+    intro_header = (
+        "\n\nYou ARE currently chatting with a logged-in, active user. Use the data below to "
+        "personalise answers while adhering strictly to the active privacy policy. "
+        "Do not invent figures that aren't listed here or derivable from them."
+    )
+    profile = intro_header + "\n" + sanitize_financial_profile(twin, mode=privacy_mode)
 
-Name: {twin.name} | Age: {twin.age} | Occupation: {twin.occupation} | City: {twin.city}
-Monthly income (incl. extra income): \u20b9{twin.total_income:,.0f}
-Net worth: \u20b9{twin.net_worth:,.0f}
-Bank savings: \u20b9{twin.bank_savings:,.0f} | Fixed deposits: \u20b9{twin.fd_amount:,.0f} | Emergency fund: \u20b9{twin.emergency_fund:,.0f}
-Investments \u2014 SIP: \u20b9{twin.sip_amount:,.0f}/mo, Mutual funds: \u20b9{twin.mutual_funds:,.0f}, Stocks: \u20b9{twin.stocks:,.0f}, PPF: \u20b9{twin.ppf_investment:,.0f}, NPS: \u20b9{twin.nps_investment:,.0f}
-Debt \u2014 Home loan: \u20b9{twin.home_loan:,.0f}, Car loan: \u20b9{twin.car_loan:,.0f}, Credit card debt: \u20b9{twin.credit_card_debt:,.0f}, Monthly EMI: \u20b9{twin.monthly_emi:,.0f}
-Insurance \u2014 Health: \u20b9{twin.health_insurance:,.0f}, Life: \u20b9{twin.life_insurance:,.0f}
-Monthly essential expenses (rent, groceries, utilities, transport, food delivery, entertainment, shopping): \u20b9{twin.basic_expenses:,.0f}
-Goal: {twin.goal_type or 'Not set'} (target \u20b9{twin.goal_amount:,.0f})
-"""
-
-    pred_context = _build_predictions_and_scenarios_context(twin)
+    pred_context = sanitize_predictions_and_scenarios(twin, mode=privacy_mode)
     if pred_context:
         profile += f"\n{pred_context}\n"
 
-    digest = _coach_digest(twin)
-    if digest:
-        profile += f"\nApp's own AI Coach analysis (use this to stay consistent, but explain in your own words):\n{digest}\n"
+    if privacy_mode != PRIVACY_MODE_MINIMAL:
+        digest = _coach_digest(twin)
+        if digest:
+            profile += f"\nApp's own AI Coach analysis (use this to stay consistent, but explain in your own words):\n{digest}\n"
 
     return base + instructions + profile
 
@@ -1422,7 +1423,9 @@ def render_chatbot(twin=None):
 
         header_l, header_m, header_r = st.columns([0.56, 0.26, 0.18], vertical_alignment="center")
         with header_l:
-            st.markdown("""
+            from utils.privacy import get_user_privacy_mode
+            pm_label = get_user_privacy_mode(getattr(twin, "user_id", None)).capitalize() if twin else "Guest"
+            st.markdown(f"""
             <div class="ftw-panel-title">
                 <div class="ftw-mini-orb">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1433,7 +1436,7 @@ def render_chatbot(twin=None):
                 <div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <div class="ftw-title-text">FinBot</div>
-                        <span class="ftw-intel-badge"><i class="fa-solid fa-sparkles" style="font-size: 0.55rem;"></i> FinTwin Intelligence</span>
+                        <span class="ftw-intel-badge" title="Active AI Privacy Mode: {_he(pm_label)}"><i class="fa-solid fa-shield-halved" style="font-size: 0.55rem;"></i> {_he(pm_label)} Privacy</span>
                     </div>
                     <div class="ftw-subtitle"><span class="ftw-pulse-dot">●</span> Online</div>
                 </div>

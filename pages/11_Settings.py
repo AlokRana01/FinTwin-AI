@@ -205,7 +205,80 @@ with tab_security:
             else:
                 st.error(msg)
 
-    # ── 3. YOUR DATA & PORTABILITY (DOWNLOAD MY DATA) ────────────────────────
+    # ── 3. AI FINANCIAL DATA SHARING (PRIVACY CONTROL) ──────────────────────
+    from utils.privacy import (
+        get_user_privacy_mode,
+        set_user_privacy_mode,
+        PRIVACY_MODE_ANONYMIZED,
+        PRIVACY_MODE_MINIMAL,
+        PRIVACY_MODE_FULL,
+    )
+
+    st.markdown("""
+    <div style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
+        <div class="settings-section-title">
+            <i class="fa-solid fa-shield-halved" style="color: #4F8CFF; font-size: 0.95rem;"></i>
+            <h4>AI Financial Data Sharing (Privacy Control)</h4>
+        </div>
+        <div class="settings-section-desc">
+            Choose what level of financial context is shared with external AI providers (Google Gemini / Groq Cloud) when asking FinBot questions.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    curr_privacy_mode = get_user_privacy_mode(twin.user_id)
+    mode_options = [
+        "Anonymized Context (Default & Recommended)",
+        "Minimal Context",
+        "Full Context (Explicit Opt-In)",
+    ]
+    mode_map = {
+        "Anonymized Context (Default & Recommended)": PRIVACY_MODE_ANONYMIZED,
+        "Minimal Context": PRIVACY_MODE_MINIMAL,
+        "Full Context (Explicit Opt-In)": PRIVACY_MODE_FULL,
+    }
+    reverse_map = {
+        PRIVACY_MODE_ANONYMIZED: "Anonymized Context (Default & Recommended)",
+        PRIVACY_MODE_MINIMAL: "Minimal Context",
+        PRIVACY_MODE_FULL: "Full Context (Explicit Opt-In)",
+    }
+
+    current_idx = 0
+    if curr_privacy_mode in reverse_map:
+        current_idx = mode_options.index(reverse_map[curr_privacy_mode])
+
+    with st.form("ai_privacy_form"):
+        selected_option = st.radio(
+            "Select AI Context Sharing Level:",
+            options=mode_options,
+            index=current_idx,
+            help="Determines how personal financial data is processed prior to external LLM dispatch.",
+        )
+
+        st.markdown("""
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 12px 14px; margin-top: 8px; margin-bottom: 8px; font-size: 0.82rem; line-height: 1.5; color: #CBD5E1;">
+            <strong>🛡️ Data Minimization Guidelines:</strong>
+            <ul style="margin: 6px 0 0 16px; padding: 0;">
+                <li><strong>Anonymized Context (Default):</strong> Transforms exact monetary values into generalized brackets (e.g. ₹50k-₹75k). Redacts your real name, city, employer, and exact account balances.</li>
+                <li><strong>Minimal Context:</strong> Transmits only high-level financial health tier and risk category. Zero income, asset, debt, or balance figures are shared.</li>
+                <li><strong>Full Context:</strong> Unmasked values are shared with the AI model for exact numerical computations. Requires explicit user consent.</li>
+            </ul>
+            <div style="margin-top: 8px; font-size: 0.76rem; color: #94A3B8;">
+                <strong>Third-Party AI Transparency Disclosure:</strong> FinBot communicates with Google Gemini (<code>generativelanguage.googleapis.com</code>) or Groq Cloud (<code>api.groq.com</code>). Bank passwords, account numbers, and credentials are never transmitted under any mode.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        save_privacy = st.form_submit_button("Save Privacy Preference", type="primary")
+        if save_privacy:
+            new_mode = mode_map[selected_option]
+            if set_user_privacy_mode(twin.user_id, new_mode):
+                st.success(f"Privacy preference saved: {selected_option}")
+                st.rerun()
+            else:
+                st.error("Failed to save privacy preference. Please try again.")
+
+    # ── 4. YOUR DATA & PORTABILITY (DOWNLOAD MY DATA) ────────────────────────
     st.markdown("""
     <div style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
         <div class="settings-section-title">
@@ -254,7 +327,7 @@ with tab_security:
     else:
         st.warning("Could not prepare export at this moment. Please try again.")
 
-    # ── 4. DANGER ZONE: DELETE ACCOUNT & DATA ────────────────────────────────
+    # ── 5. DANGER ZONE: DELETE ACCOUNT & DATA ────────────────────────────────
     st.markdown("""
     <div class="danger-zone-card">
         <div class="danger-badge">Danger Zone</div>

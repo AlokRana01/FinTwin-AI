@@ -227,6 +227,9 @@ class TestFinTwinAuthentication(unittest.TestCase):
         """Tests that demo user is always seeded as email_verified = 1 and logs in properly."""
         demo_email = os.environ.get("DEMO_EMAIL", "demo@fintwin.app")
         demo_password = os.environ.get("DEMO_PASSWORD", "Demo@123")
+        with get_db_cursor() as cursor:
+            from database.connection import ensure_demo_user_seeded
+            ensure_demo_user_seeded(cursor)
         ok, status_code, user_id = auth.authenticate(demo_email, demo_password)
         self.assertTrue(ok)
         self.assertEqual(status_code, "SUCCESS")

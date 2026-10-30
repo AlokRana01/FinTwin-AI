@@ -12,6 +12,7 @@ requests>=2.32.4
 # Security & Environment
 argon2-cffi>=23.1.0
 python-dotenv>=1.0.0
+redis>=5.0.0
 
 # PDF report generation (utils/pdf_report.py)
 reportlab>=4.2.0

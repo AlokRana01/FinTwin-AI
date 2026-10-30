@@ -6,11 +6,15 @@ and displays the before/after impact side-by-side with comparison charts and PDF
 """
 
 import streamlit as st
+from html import escape as _he
 import pandas as pd
 from utils.session import render_sidebar_user_selector
 from utils.visualizer import PlotlyVisualizer
 from utils.simulator import ScenarioSimulator, SCENARIO_REGISTRY
-from utils.pdf_report import FinTwinPDFReport
+
+def FinTwinPDFReport(*args, **kwargs):
+    from utils.pdf_report import FinTwinPDFReport as _RealPDF
+    return _RealPDF(*args, **kwargs)
 
 # ── Page Configuration ───────────────────────────────────────────────────────
 st.set_page_config(
@@ -1063,7 +1067,7 @@ with tab2:
     st.markdown(f"""
     <div class="sim-section-header">
         <h3 class="sim-section-title">Financial Impact</h3>
-        <p class="sim-section-desc">Side-by-side comparison before and after simulating {result.scenario_name}.</p>
+        <p class="sim-section-desc">Side-by-side comparison before and after simulating {_he(result.scenario_name)}.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1085,7 +1089,7 @@ with tab2:
 
     before_card_html = f"""<div style="background: #111827; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 1.5rem 1.6rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);"><div><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.12rem; font-weight: 700; color: #94A3B8; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-clock-rotate-left" style="color: #64748B;"></i> Before Event</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;"><div class="sim-impact-metric-box"><div class="sim-metric-label">Monthly Income</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{before.monthly_income:,.0f}</div><div style="font-size: 0.8rem; color: #64748B; margin-top: 4px;">Baseline</div></div><div class="sim-impact-metric-box"><div class="sim-metric-label">Monthly Surplus</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{before.monthly_surplus:,.0f}</div><div style="font-size: 0.8rem; color: #64748B; margin-top: 4px;">Baseline</div></div><div class="sim-impact-metric-box"><div class="sim-metric-label">Net Worth</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{before.net_worth:,.0f}</div><div style="font-size: 0.8rem; color: #64748B; margin-top: 4px;">Baseline</div></div><div class="sim-impact-metric-box"><div class="sim-metric-label">Health Score</div><div class="sim-metric-val" style="font-size: 1.35rem;">{before.health_score:.1f} <span style="font-size: 0.8rem; color: #94A3B8; font-weight: 500;">/100</span></div><div style="font-size: 0.8rem; color: #64748B; margin-top: 4px;">Baseline</div></div><div class="sim-impact-metric-box"><div class="sim-metric-label">Savings (12M)</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{before.future_savings_12m:,.0f}</div><div style="font-size: 0.8rem; color: #64748B; margin-top: 4px;">Baseline</div></div><div class="sim-impact-metric-box"><div class="sim-metric-label">Net Worth (5Y)</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{before.future_net_worth_5y:,.0f}</div><div style="font-size: 0.8rem; color: #64748B; margin-top: 4px;">Baseline</div></div></div></div><div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08);"><span style="font-size: 0.88rem; font-weight: 600; color: #94A3B8;">Risk Level</span>{risk_pill(before.risk_level)}</div></div>"""
 
-    after_card_html = f"""<div style="background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, #111827 100%); border: 1.5px solid rgba(79, 140, 255, 0.45); border-radius: 14px; padding: 1.5rem 1.6rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4);"><div><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.12rem; font-weight: 700; color: #F8FAFC; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-wand-magic-sparkles" style="color: #4F8CFF;"></i> After {result.scenario_name}</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;"><div class="sim-impact-metric-box" style="border-color: rgba(79, 140, 255, 0.25);"><div class="sim-metric-label">Monthly Income</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{after.monthly_income:,.0f}</div>{format_delta(income_delta)}</div><div class="sim-impact-metric-box" style="border-color: rgba(79, 140, 255, 0.25);"><div class="sim-metric-label">Monthly Surplus</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{after.monthly_surplus:,.0f}</div>{format_delta(surplus_delta)}</div><div class="sim-impact-metric-box" style="border-color: rgba(79, 140, 255, 0.25);"><div class="sim-metric-label">Net Worth</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{after.net_worth:,.0f}</div>{format_delta(nw_delta)}</div><div class="sim-impact-metric-box" style="border-color: rgba(79, 140, 255, 0.25);"><div class="sim-metric-label">Health Score</div><div class="sim-metric-val" style="font-size: 1.35rem;">{after.health_score:.1f} <span style="font-size: 0.8rem; color: #94A3B8; font-weight: 500;">/100</span></div>{format_delta(hs_delta, is_currency=False)}</div><div class="sim-impact-metric-box" style="border-color: rgba(79, 140, 255, 0.25);"><div class="sim-metric-label">Savings (12M)</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{after.future_savings_12m:,.0f}</div>{format_delta(sav_delta)}</div><div class="sim-impact-metric-box" style="border-color: rgba(79, 140, 255, 0.25);"><div class="sim-metric-label">Net Worth (5Y)</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{after.future_net_worth_5y:,.0f}</div>{format_delta(fnw_delta)}</div></div></div><div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08);"><span style="font-size: 0.88rem; font-weight: 600; color: #94A3B8;">Risk Level</span>{risk_pill(after.risk_level)}</div></div>"""
+    after_card_html = f"""<div style="background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, #111827 100%); border: 1.5px solid rgba(79, 140, 255, 0.45); border-radius: 14px; padding: 1.5rem 1.6rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4);"><div><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.12rem; font-weight: 700; color: #F8FAFC; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-wand-magic-sparkles" style="color: #4F8CFF;"></i> After {_he(result.scenario_name)}</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;"><div class="sim-impact-metric-box" style="border-color: rgba(79, 140, 255, 0.25);"><div class="sim-metric-label">Monthly Income</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{after.monthly_income:,.0f}</div>{format_delta(income_delta)}</div><div class="sim-impact-metric-box" style="border-color: rgba(79, 140, 255, 0.25);"><div class="sim-metric-label">Monthly Surplus</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{after.monthly_surplus:,.0f}</div>{format_delta(surplus_delta)}</div><div class="sim-impact-metric-box" style="border-color: rgba(79, 140, 255, 0.25);"><div class="sim-metric-label">Net Worth</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{after.net_worth:,.0f}</div>{format_delta(nw_delta)}</div><div class="sim-impact-metric-box" style="border-color: rgba(79, 140, 255, 0.25);"><div class="sim-metric-label">Health Score</div><div class="sim-metric-val" style="font-size: 1.35rem;">{after.health_score:.1f} <span style="font-size: 0.8rem; color: #94A3B8; font-weight: 500;">/100</span></div>{format_delta(hs_delta, is_currency=False)}</div><div class="sim-impact-metric-box" style="border-color: rgba(79, 140, 255, 0.25);"><div class="sim-metric-label">Savings (12M)</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{after.future_savings_12m:,.0f}</div>{format_delta(sav_delta)}</div><div class="sim-impact-metric-box" style="border-color: rgba(79, 140, 255, 0.25);"><div class="sim-metric-label">Net Worth (5Y)</div><div class="sim-metric-val" style="font-size: 1.35rem;">₹{after.future_net_worth_5y:,.0f}</div>{format_delta(fnw_delta)}</div></div></div><div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08);"><span style="font-size: 0.88rem; font-weight: 600; color: #94A3B8;">Risk Level</span>{risk_pill(after.risk_level)}</div></div>"""
 
     impact_grid_html = f"""<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin: 1.25rem 0 2rem 0;">{before_card_html}{after_card_html}</div>"""
     st.markdown(impact_grid_html, unsafe_allow_html=True)
@@ -1125,7 +1129,7 @@ with tab2:
         <h3 class="sim-section-title">Financial Impact Comparison</h3>
         <p class="sim-section-desc">Key metrics evaluated before versus after {0}.</p>
     </div>
-    """.format(result.scenario_name), unsafe_allow_html=True)
+    """.format(_he(result.scenario_name)), unsafe_allow_html=True)
 
     chart_metrics = {
         "Monthly Surplus":  (before.monthly_surplus,  after.monthly_surplus),
@@ -1232,7 +1236,7 @@ with tab2:
                         Scenario Comparison Report
                     </div>
                     <div style="color: #94A3B8; font-size: 0.88rem; line-height: 1.45;">
-                        Download a comprehensive PDF summary of {result.scenario_name} impact on your savings and net worth.
+                        Download a comprehensive PDF summary of {_he(result.scenario_name)} impact on your savings and net worth.
                     </div>
                 </div>
             </div>

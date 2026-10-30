@@ -13,6 +13,7 @@ Tabs:
 """
 
 import streamlit as st
+from html import escape as _he
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -21,7 +22,9 @@ from utils.coach import (
     FinancialCoach, CoachingReport, Recommendation, Alert,
     Domain, Severity, SEVERITY_META,
 )
-from utils.pdf_report import FinTwinPDFReport
+def FinTwinPDFReport(*args, **kwargs):
+    from utils.pdf_report import FinTwinPDFReport as _RealPDF
+    return _RealPDF(*args, **kwargs)
 
 # ── Page Configuration ───────────────────────────────────────────────────────
 st.set_page_config(
@@ -351,9 +354,17 @@ if not twin:
 # Generate report (cached per user_id)
 # ══════════════════════════════════════════════════════════════════════════════
 
+def _twin_coach_hash(t):
+    return (
+        f"{getattr(t, 'user_id', '')}:{getattr(t, 'total_income', 0)}:"
+        f"{getattr(t, 'basic_expenses', 0)}:{getattr(t, 'monthly_emi', 0)}:"
+        f"{getattr(t, 'sip_amount', 0)}:{getattr(t, 'emergency_fund', 0)}:"
+        f"{getattr(t, 'loan_amount', 0)}:{getattr(t, 'credit_card_debt', 0)}"
+    )
+
 @st.cache_data(
     show_spinner="Generating personalised coaching report…",
-    hash_funcs={object: lambda x: str(getattr(x, "user_id", id(x)))},
+    hash_funcs={object: _twin_coach_hash},
 )
 def get_coaching_report_v2(_twin) -> CoachingReport:
     return FinancialCoach(_twin).generate_report()
@@ -374,11 +385,11 @@ def render_alert(alert: Alert) -> None:
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
                 <span style="color: {meta['color']}; font-size: 1rem;">{meta['icon']}</span>
                 <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem; font-weight: 700; color: {meta['color']};">
-                    {alert.headline}
+                    {_he(alert.headline)}
                 </span>
             </div>
             <div style="color: #CBD5E1; font-size: 0.9rem; line-height: 1.55; padding-left: 26px;">
-                {alert.message}
+                {_he(alert.message)}
             </div>
         </div>
         """,
@@ -394,16 +405,16 @@ def render_recommendation(rec: Recommendation, expanded: bool = False) -> None:
             f"""
             <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 16px 18px; margin-bottom: 10px;">
                 <div style="color: #F8FAFC; font-size: 0.93rem; line-height: 1.6; margin-bottom: 12px;">
-                    {rec.detail}
+                    {_he(rec.detail)}
                 </div>
                 <div style="background: rgba(15, 23, 42, 0.6); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px;">
                     <div style="margin-bottom: 8px; font-size: 0.89rem;">
                         <strong style="color: {meta['color']};">Recommended Action:</strong>
-                        <span style="color: #CBD5E1;"> {rec.action}</span>
+                        <span style="color: #CBD5E1;"> {_he(rec.action)}</span>
                     </div>
                     <div style="font-size: 0.89rem;">
                         <strong style="color: #38BDF8;">Expected Impact:</strong>
-                        <span style="color: #CBD5E1;"> {rec.impact}</span>
+                        <span style="color: #CBD5E1;"> {_he(rec.impact)}</span>
                     </div>
                 </div>
             </div>
@@ -412,7 +423,7 @@ def render_recommendation(rec: Recommendation, expanded: bool = False) -> None:
         )
         if rec.tags:
             tag_html = " ".join(
-                f'<span style="background: #1E293B; border: 1px solid rgba(255,255,255,0.08); color: #94A3B8; border-radius: 4px; padding: 3px 9px; font-size: 0.74rem; margin-right: 6px;">#{t}</span>'
+                f'<span style="background: #1E293B; border: 1px solid rgba(255,255,255,0.08); color: #94A3B8; border-radius: 4px; padding: 3px 9px; font-size: 0.74rem; margin-right: 6px;">#{_he(t)}</span>'
                 for t in rec.tags
             )
             st.markdown(f"<div style='margin-top: 6px; margin-bottom: 4px;'>{tag_html}</div>", unsafe_allow_html=True)
@@ -541,7 +552,7 @@ with tab_home:
 
     st.markdown(f"""
     <div class="coach-narrative-box">
-        {report.narrative}
+        {_he(report.narrative)}
     </div>
     """, unsafe_allow_html=True)
 
@@ -559,7 +570,7 @@ with tab_home:
         <div class="coach-priority-badge">
             <i class="fa-solid fa-bolt"></i> Immediate Action Required
         </div>
-        <p class="coach-priority-text">{report.top_action}</p>
+        <p class="coach-priority-text">{_he(report.top_action)}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -586,7 +597,7 @@ with tab_home:
                     <div class="domain-card-icon">
                         <i class="fa-solid {icon_cls}"></i>
                     </div>
-                    <div class="domain-card-title">{domain_name}</div>
+                    <div class="domain-card-title">{_he(domain_name)}</div>
                     <div class="domain-card-score" style="color: {grade_color};">{summary.score:.0f}<span style="font-size: 0.85rem; color: #64748B; font-weight: 500;">/100</span></div>
                     <div class="domain-grade-badge" style="background: {grade_bg}; color: {grade_color}; border: 1px solid {grade_color}40;">
                         Grade {summary.grade}
@@ -658,7 +669,7 @@ with tab_sav:
                         Grade {sav_sum.grade} ({sav_sum.score:.0f}/100)
                     </span>
                 </div>
-                <div style="color: #94A3B8; font-size: 0.92rem;">{sav_sum.headline}</div>
+                <div style="color: #94A3B8; font-size: 0.92rem;">{_he(sav_sum.headline)}</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -689,8 +700,8 @@ with tab_sav:
             for k, v in sav_sum.metrics.items():
                 st.markdown(f"""
                 <div class="domain-metric-row">
-                    <span class="domain-metric-label">{k}</span>
-                    <span class="domain-metric-val">{v}</span>
+                    <span class="domain-metric-label">{_he(str(k))}</span>
+                    <span class="domain-metric-val">{_he(str(v))}</span>
                 </div>
                 """, unsafe_allow_html=True)
             st.markdown("</div></div>", unsafe_allow_html=True)
@@ -704,7 +715,7 @@ with tab_sav:
                 st.markdown(f"""
                 <div class="domain-suggestion-item">
                     <i class="fa-solid fa-circle-arrow-right domain-suggestion-icon"></i>
-                    <span>{s}</span>
+                    <span>{_he(str(s))}</span>
                 </div>
                 """, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
@@ -776,7 +787,7 @@ with tab_inv:
                         Grade {inv_sum.grade} ({inv_sum.score:.0f}/100)
                     </span>
                 </div>
-                <div style="color: #94A3B8; font-size: 0.92rem;">{inv_sum.headline}</div>
+                <div style="color: #94A3B8; font-size: 0.92rem;">{_he(inv_sum.headline)}</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -807,8 +818,8 @@ with tab_inv:
             for k, v in inv_sum.metrics.items():
                 st.markdown(f"""
                 <div class="domain-metric-row">
-                    <span class="domain-metric-label">{k}</span>
-                    <span class="domain-metric-val">{v}</span>
+                    <span class="domain-metric-label">{_he(str(k))}</span>
+                    <span class="domain-metric-val">{_he(str(v))}</span>
                 </div>
                 """, unsafe_allow_html=True)
             st.markdown("</div></div>", unsafe_allow_html=True)
@@ -822,7 +833,7 @@ with tab_inv:
                 st.markdown(f"""
                 <div class="domain-suggestion-item">
                     <i class="fa-solid fa-circle-arrow-right domain-suggestion-icon"></i>
-                    <span>{s}</span>
+                    <span>{_he(str(s))}</span>
                 </div>
                 """, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
@@ -892,7 +903,7 @@ with tab_debt:
                         Grade {debt_sum.grade} ({debt_sum.score:.0f}/100)
                     </span>
                 </div>
-                <div style="color: #94A3B8; font-size: 0.92rem;">{debt_sum.headline}</div>
+                <div style="color: #94A3B8; font-size: 0.92rem;">{_he(debt_sum.headline)}</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -923,8 +934,8 @@ with tab_debt:
             for k, v in debt_sum.metrics.items():
                 st.markdown(f"""
                 <div class="domain-metric-row">
-                    <span class="domain-metric-label">{k}</span>
-                    <span class="domain-metric-val">{v}</span>
+                    <span class="domain-metric-label">{_he(str(k))}</span>
+                    <span class="domain-metric-val">{_he(str(v))}</span>
                 </div>
                 """, unsafe_allow_html=True)
             st.markdown("</div></div>", unsafe_allow_html=True)
@@ -938,7 +949,7 @@ with tab_debt:
                 st.markdown(f"""
                 <div class="domain-suggestion-item">
                     <i class="fa-solid fa-circle-arrow-right domain-suggestion-icon"></i>
-                    <span>{s}</span>
+                    <span>{_he(str(s))}</span>
                 </div>
                 """, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
@@ -1024,7 +1035,7 @@ with tab_ef:
                         Grade {ef_sum.grade} ({ef_sum.score:.0f}/100)
                     </span>
                 </div>
-                <div style="color: #94A3B8; font-size: 0.92rem;">{ef_sum.headline}</div>
+                <div style="color: #94A3B8; font-size: 0.92rem;">{_he(ef_sum.headline)}</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1055,8 +1066,8 @@ with tab_ef:
             for k, v in ef_sum.metrics.items():
                 st.markdown(f"""
                 <div class="domain-metric-row">
-                    <span class="domain-metric-label">{k}</span>
-                    <span class="domain-metric-val">{v}</span>
+                    <span class="domain-metric-label">{_he(str(k))}</span>
+                    <span class="domain-metric-val">{_he(str(v))}</span>
                 </div>
                 """, unsafe_allow_html=True)
             st.markdown("</div></div>", unsafe_allow_html=True)
@@ -1070,7 +1081,7 @@ with tab_ef:
                 st.markdown(f"""
                 <div class="domain-suggestion-item">
                     <i class="fa-solid fa-circle-arrow-right domain-suggestion-icon"></i>
-                    <span>{s}</span>
+                    <span>{_he(str(s))}</span>
                 </div>
                 """, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
@@ -1150,7 +1161,7 @@ with tab_tax:
                         Grade {tax_sum.grade} ({tax_sum.score:.0f}/100)
                     </span>
                 </div>
-                <div style="color: #94A3B8; font-size: 0.92rem;">{tax_sum.headline}</div>
+                <div style="color: #94A3B8; font-size: 0.92rem;">{_he(tax_sum.headline)}</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1181,8 +1192,8 @@ with tab_tax:
             for k, v in tax_sum.metrics.items():
                 st.markdown(f"""
                 <div class="domain-metric-row">
-                    <span class="domain-metric-label">{k}</span>
-                    <span class="domain-metric-val">{v}</span>
+                    <span class="domain-metric-label">{_he(str(k))}</span>
+                    <span class="domain-metric-val">{_he(str(v))}</span>
                 </div>
                 """, unsafe_allow_html=True)
             st.markdown("</div></div>", unsafe_allow_html=True)
@@ -1196,7 +1207,7 @@ with tab_tax:
                 st.markdown(f"""
                 <div class="domain-suggestion-item">
                     <i class="fa-solid fa-circle-arrow-right domain-suggestion-icon"></i>
-                    <span>{s}</span>
+                    <span>{_he(str(s))}</span>
                 </div>
                 """, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)

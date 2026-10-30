@@ -9,7 +9,6 @@ import pandas as pd
 from html import escape as _he
 from utils.session import render_sidebar_user_selector
 from utils.visualizer import PlotlyVisualizer
-from utils.pdf_report import FinTwinPDFReport
 from models.twin_engine import FinancialDigitalTwin, HealthScoreEngine
 from database.db_manager import DBManager
 
@@ -328,7 +327,7 @@ Grade {financial_grade}
             st.markdown(f"""<div class="fh-insight-item">
 <div style="display: flex; align-items: center; gap: 10px;">
 <i class="{f_icon_class}" style="color: #94A3B8; font-size: 0.9rem; width: 16px; text-align: center;"></i>
-<span style="color: #F8FAFC; font-weight: 500;">{f_name}</span>
+<span style="color: #F8FAFC; font-weight: 500;">{_he(f_name)}</span>
 </div>
 <span style="color: {f_color}; font-weight: 700; font-size: 0.82rem;">{f_label} &middot; {f_score:.0f}/100</span>
 </div>""", unsafe_allow_html=True)
@@ -350,7 +349,7 @@ Grade {financial_grade}
             <span>What This Means</span>
         </div>
         <p class="fh-narrative-text">
-            Your <strong>{top_strength}</strong> is currently one of the strongest positive drivers of your overall score. Conversely, <strong>{top_attention}</strong> represents your primary opportunity for enhancement. Systematically addressing lower-scoring categories could noticeably elevate your financial health and future resilience.
+            Your <strong>{_he(top_strength)}</strong> is currently one of the strongest positive drivers of your overall score. Conversely, <strong>{_he(top_attention)}</strong> represents your primary opportunity for enhancement. Systematically addressing lower-scoring categories could noticeably elevate your financial health and future resilience.
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -439,7 +438,7 @@ Grade {financial_grade}
 
                 st.markdown(f"""
                 <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.80rem; color: #94A3B8;">
-                    <strong style="color: #F8FAFC;">Recommended:</strong> {rec_action}
+                    <strong style="color: #F8FAFC;">Recommended:</strong> {_he(rec_action)}
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -585,7 +584,8 @@ with tab_peers:
     </div>
     """, unsafe_allow_html=True)
 
-    cohort_avg = DBManager.get_cohort_averages(twin.occupation)
+    from utils.cache import get_cached_cohort_averages
+    cohort_avg = get_cached_cohort_averages(twin.occupation)
     
     if cohort_avg:
         user_spend = {
@@ -633,6 +633,7 @@ with tab_peers:
 st.markdown("<div style='margin-top: 2.25rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1.5rem;'></div>", unsafe_allow_html=True)
 
 try:
+    from utils.pdf_report import FinTwinPDFReport
     _pdf_health = FinTwinPDFReport(
         report_title="Financial Health Score Report",
         user_id=twin.user_id,

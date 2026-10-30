@@ -6,11 +6,11 @@ and provides interactive simulation for expense tuning.
 
 import streamlit as st
 import pandas as pd
+from html import escape as _he
 import plotly.graph_objects as go
 import plotly.express as px
 from utils.session import render_sidebar_user_selector
 from utils.visualizer import PlotlyVisualizer
-from utils.pdf_report import FinTwinPDFReport
 from database.db_manager import DBManager
 
 st.set_page_config(page_title="Behavior Analysis", page_icon="assets/logos/favicon.svg", layout="wide")
@@ -57,14 +57,17 @@ tab1, tab2, tab3 = st.tabs([
 # TAB 1 — Outflow Allocation
 # ─────────────────────────────────────────────────────────────────────────────
 with tab1:
+    safe_name = _he(twin.name)
+    safe_occupation = _he(twin.occupation or "Salaried Professional")
+    safe_city = _he(twin.city or "India")
     st.markdown(
         f"""
         <div style="background:linear-gradient(135deg,#1f2937,#111827);
                     border:1px solid #374151;border-radius:12px;padding:18px 24px;
                     margin-bottom:20px;">
             <span style="color:#9CA3AF;font-size:0.85rem;text-transform:uppercase;font-weight:700">Active Profile</span>
-            <h3 style="margin:0 0 4px 0;color:#F9FAFB">{twin.name}</h3>
-            <span style="color:#6B7280;font-size:0.88rem">{twin.occupation} &middot; Age {twin.age} &middot; {twin.city}</span>
+            <h3 style="margin:0 0 4px 0;color:#F9FAFB">{safe_name}</h3>
+            <span style="color:#6B7280;font-size:0.88rem">{safe_occupation} &middot; Age {twin.age} &middot; {safe_city}</span>
         </div>
         """,
         unsafe_allow_html=True
@@ -147,7 +150,8 @@ with tab2:
     st.markdown("#### Peer Group Cohort Comparison")
     st.write(f"Compare your outflows with peers working as **{twin.occupation}**.")
     
-    cohort_avg = DBManager.get_cohort_averages(twin.occupation)
+    from utils.cache import get_cached_cohort_averages
+    cohort_avg = get_cached_cohort_averages(twin.occupation)
     
     if cohort_avg:
         user_spend = {
@@ -263,6 +267,7 @@ with tab3:
     st.markdown("<div style='margin-top: 2.25rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1.5rem;'></div>", unsafe_allow_html=True)
 
     try:
+        from utils.pdf_report import FinTwinPDFReport
         _pdf_report = FinTwinPDFReport(
             report_title="Spending Behavior & Peer Analysis Report",
             user_id=twin.user_id,

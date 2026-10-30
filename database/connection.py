@@ -19,8 +19,9 @@ def get_connection():
     referential integrity (SQLite disables it by default).
     """
     try:
-        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=5.0)
         conn.execute("PRAGMA foreign_keys = ON;")
+        conn.execute("PRAGMA busy_timeout = 5000;")
         conn.row_factory = sqlite3.Row
         return conn
     except sqlite3.Error as e:
@@ -86,6 +87,15 @@ _load_dotenv()
 # Defaults to standard demo credentials so the app works seamlessly out-of-the-box.
 DEMO_EMAIL    = os.environ.get("DEMO_EMAIL",    "demo@fintwin.app")
 DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "Demo@123")
+
+
+def is_demo_seed_enabled() -> bool:
+    """
+    Returns True only if ENABLE_DEMO_SEED is explicitly set to 'true', '1', or 'yes'
+    (case-insensitive). Defaults to False to prevent automatic creation of default
+    demo credentials in production or public deployments.
+    """
+    return os.environ.get("ENABLE_DEMO_SEED", "false").strip().lower() in ("true", "1", "yes")
 
 
 def ensure_demo_user_seeded(cursor):
@@ -217,13 +227,26 @@ def init_db():
             conn.commit()
             logger.info("Database schema applied successfully.")
 
+        # Configure Write-Ahead Logging (WAL) journal mode
+        cursor.execute("PRAGMA journal_mode = WAL;")
+        cursor.execute("PRAGMA synchronous = NORMAL;")
+        jm_row = cursor.fetchone()
+        active_jm = jm_row[0] if jm_row else "unknown"
+        logger.info(f"SQLite journal_mode configured: {active_jm}")
+
         # Ensure migrations apply to pre-existing DBs
         _ensure_auth_columns(cursor)
         _ensure_chat_usage_table(cursor)
 
         _purge_legacy_training_rows(cursor)
 
-        ensure_demo_user_seeded(cursor)
+        # SEC-04: Demo account is only auto-seeded when explicitly enabled
+        if is_demo_seed_enabled():
+            ensure_demo_user_seeded(cursor)
+            logger.info("Demo user account seeded (ENABLE_DEMO_SEED is enabled).")
+        else:
+            logger.info("Demo user auto-seeding skipped by default (ENABLE_DEMO_SEED is not enabled).")
+
         conn.commit()
         logger.info("Database ready.")
 
@@ -284,3 +307,29 @@ def _purge_legacy_training_rows(cursor):
         placeholders = ",".join("?" for _ in chunk_ids)
         for table in ("transactions", "goals", "digital_twins", "users"):
             cursor.execute(f"DELETE FROM {table} WHERE user_id IN ({placeholders})", chunk_ids)
+
+
+def get_database_pragmas(conn=None) -> dict:
+    """
+    Returns current SQLite PRAGMA status for diagnostic and testing verification.
+    """
+    close_after = False
+    if conn is None:
+        conn = get_connection()
+        close_after = True
+    try:
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA journal_mode;")
+        jm = cursor.fetchone()[0]
+        cursor.execute("PRAGMA busy_timeout;")
+        bt = cursor.fetchone()[0]
+        cursor.execute("PRAGMA foreign_keys;")
+        fk = cursor.fetchone()[0]
+        return {
+            "journal_mode": str(jm).lower(),
+            "busy_timeout": int(bt),
+            "foreign_keys": int(fk),
+        }
+    finally:
+        if close_after:
+            conn.close()

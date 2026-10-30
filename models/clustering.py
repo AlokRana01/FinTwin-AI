@@ -22,8 +22,8 @@ import os
 import json
 import numpy as np
 import pandas as pd
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
+# KMeans and StandardScaler are imported lazily inside methods to keep
+# module import times near-instantaneous during Streamlit page navigation.
 from typing import Dict, Any, Optional
 
 # Persisted artifact produced ONLY by the offline training pipeline
@@ -136,8 +136,8 @@ class FinancialPersonalityClusterer:
     N_CLUSTERS = 5
 
     def __init__(self):
-        self.kmeans: Optional[KMeans] = None
-        self.scaler: StandardScaler = StandardScaler()
+        self.kmeans: Any = None
+        self.scaler: Any = None
         self._label_map: Dict[int, str] = {}   # cluster_index -> personality label
         self._is_fitted: bool = False
 
@@ -157,6 +157,12 @@ class FinancialPersonalityClusterer:
         """
         if df.empty or not all(c in df.columns for c in FEATURE_COLS):
             return
+
+        from sklearn.cluster import KMeans
+        from sklearn.preprocessing import StandardScaler
+
+        if self.scaler is None:
+            self.scaler = StandardScaler()
 
         X = df[FEATURE_COLS].fillna(0.0).values
         X_scaled = self.scaler.fit_transform(X)
@@ -206,6 +212,9 @@ class FinancialPersonalityClusterer:
             return instance  # stays unfitted -> callers fall back to rule-based logic
 
         try:
+            from sklearn.cluster import KMeans
+            from sklearn.preprocessing import StandardScaler
+
             with open(path, "r") as f:
                 payload = json.load(f)
 

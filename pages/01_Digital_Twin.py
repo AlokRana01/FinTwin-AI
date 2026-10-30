@@ -13,7 +13,6 @@ from utils.session import render_sidebar_user_selector
 from utils.security import validate_name
 from database.db_manager import DBManager
 from utils.visualizer import PlotlyVisualizer
-from utils.pdf_report import FinTwinPDFReport
 
 st.set_page_config(
     page_title="My Financial Digital Twin — FinTwin AI",
@@ -324,7 +323,7 @@ with tab_overview:
         st.markdown(f"""
         <div class="twin-profile-card">
             <div class="twin-profile-left">
-                <div class="twin-avatar">{initials}</div>
+                <div class="twin-avatar">{_he(initials)}</div>
                 <div class="twin-profile-meta">
                     <div class="twin-name">{_he(twin.name)}</div>
                     <div class="twin-details">{_he(twin.occupation or 'Salaried Professional')} &middot; Age {twin.age} &middot; {_he(twin.city or 'India')}</div>
@@ -462,7 +461,7 @@ with tab_overview:
             if surplus > 0:
                 st.markdown(f"""<div class="chart-summary-row"><span style="color: #10B981; font-weight: 600;">Monthly Surplus / Savings</span><span style="color: #10B981; font-weight: 700;">₹{surplus:,.0f}</span></div>""", unsafe_allow_html=True)
             for cat, amt in active_outflows.items():
-                st.markdown(f"""<div class="chart-summary-row"><span style="color: #CBD5E1;">{cat}</span><span style="color: #F8FAFC; font-weight: 600;">₹{amt:,.0f}</span></div>""", unsafe_allow_html=True)
+                st.markdown(f"""<div class="chart-summary-row"><span style="color: #CBD5E1;">{_he(cat)}</span><span style="color: #F8FAFC; font-weight: 600;">₹{amt:,.0f}</span></div>""", unsafe_allow_html=True)
             st.markdown(f"""<div class="chart-summary-row" style="border-top: 1px solid rgba(255,255,255,0.08); margin-top: 4px; padding-top: 6px;"><span style="color: #94A3B8; font-weight: 600;">Total Outflows</span><span style="color: #F8FAFC; font-weight: 700;">₹{sum(active_outflows.values()):,.0f}</span></div></div>""", unsafe_allow_html=True)
 
         st.markdown("<div style='margin-top: 2rem;'></div>", unsafe_allow_html=True)
@@ -984,6 +983,7 @@ with tab_export:
 
     # 1. PDF Report
     try:
+        from utils.pdf_report import FinTwinPDFReport
         _pdf_report = FinTwinPDFReport(
             report_title="Digital Twin Profile Report",
             user_id=twin.user_id,

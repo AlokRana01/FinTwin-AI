@@ -18,6 +18,7 @@ from utils.security import (
     validate_email,
     MAX_NAME_LEN,
     MAX_EMAIL_LEN,
+    sanitize_html_output as _he,
 )
 from typing import Optional
 import logging
@@ -27,7 +28,8 @@ logger = logging.getLogger(__name__)
 def _init_db_once():
     if not st.session_state.get("_db_initialized"):
         try:
-            init_db()
+            from utils.cache import get_initialized_db
+            get_initialized_db()
             st.session_state["_db_initialized"] = True
         except Exception as e:
             logger.error(f"Error initializing database: {e}", exc_info=True)
@@ -680,6 +682,7 @@ def reset_password_modal(raw_token: str):
     if not is_valid:
         st.error(msg)
         if st.button("Close", use_container_width=True):
+            st.session_state.pop("_active_reset_token", None)
             if "reset_password_token" in st.query_params:
                 del st.query_params["reset_password_token"]
             st.rerun()
@@ -696,9 +699,10 @@ def reset_password_modal(raw_token: str):
         if submitted:
             success, reset_msg = auth.reset_password_with_token(raw_token, new_pw, confirm_pw)
             if success:
-                st.success(reset_msg)
+                st.session_state.pop("_active_reset_token", None)
                 if "reset_password_token" in st.query_params:
                     del st.query_params["reset_password_token"]
+                st.success(reset_msg)
                 st.info("You can now close this window and log in with your new password.")
             else:
                 st.error(reset_msg)
@@ -727,7 +731,6 @@ def login_modal():
                 ok, status_code, user = auth.login_user(email, password)
                 if ok:
                     st.session_state["user_id"] = user["user_id"]
-                    st.query_params["uid"] = user["user_id"]
                     session_touch(st.session_state)
                     st.session_state["_auth_success_msg"] = f"Welcome back, {user.get('name', 'User')}!"
                     st.rerun()
@@ -741,9 +744,10 @@ def login_modal():
         if st.session_state.get("_unverified_email"):
             unverified = st.session_state["_unverified_email"]
             st.markdown("---")
+            safe_unverified = _he(unverified)
             st.markdown(
                 f"<div style='font-size: 0.9rem; color: #94A3B8; margin-bottom: 0.5rem;'>"
-                f"Need a new activation link for <strong>{unverified}</strong>?</div>",
+                f"Need a new activation link for <strong>{safe_unverified}</strong>?</div>",
                 unsafe_allow_html=True,
             )
             if st.button("Resend Verification Email", use_container_width=True, type="secondary"):
@@ -825,32 +829,36 @@ def render_sidebar_user_selector() -> Optional[FinancialDigitalTwin]:
     params = st.query_params
     if "verify_email_token" in params:
         raw_token = params.get("verify_email_token")
+        del st.query_params["verify_email_token"]
         ok, msg = auth.verify_email_token(raw_token)
         if ok:
             st.toast("Email verified! Please log in to your account.", icon=":material/check_circle:")
             st.session_state["_auth_success_msg"] = msg
         else:
             st.toast(f"Verification failed: {msg}", icon=":material/error:")
-        del st.query_params["verify_email_token"]
         st.rerun()
 
     if "reset_password_token" in params:
         raw_token = params.get("reset_password_token")
-        reset_password_modal(raw_token)
+        del st.query_params["reset_password_token"]
+        # Clear any active session to prevent cross-account session fixation
+        st.session_state.pop("user_id", None)
+        st.session_state.pop("_session_last_active", None)
+        st.session_state["_active_reset_token"] = raw_token
+        st.rerun()
 
-    # ── Session restoration & timeout enforcement ────────────────────────
-    if "user_id" not in st.session_state:
-        candidate_uid = st.query_params.get("uid")
-        if candidate_uid and DBManager.get_user_profile(candidate_uid):
-            st.session_state["user_id"] = candidate_uid
-            session_touch(st.session_state)
+    if "_active_reset_token" in st.session_state:
+        reset_password_modal(st.session_state["_active_reset_token"])
 
+    # ── Invalidate any injected or legacy 'uid' query parameters (SEC-01) ─────
+    if "uid" in st.query_params:
+        del st.query_params["uid"]
+
+    # ── Session timeout enforcement ──────────────────────────────────────────
     if "user_id" in st.session_state:
         if session_is_expired(st.session_state):
             del st.session_state["user_id"]
             st.session_state.pop("_session_last_active", None)
-            if "uid" in st.query_params:
-                del st.query_params["uid"]
             st.warning("Your session expired due to inactivity. Please log in again.")
             st.rerun()
         else:
@@ -973,17 +981,20 @@ def render_sidebar_user_selector() -> Optional[FinancialDigitalTwin]:
     else:
         initials = "FT"
 
+    safe_initials = _he(initials)
+    safe_name = _he(twin.name)
+
     # ── Compact Bottom Profile Footer ──
     st.sidebar.markdown(f"""<div class="sidebar-profile-box">
 <div class="profile-user-row">
 <div class="profile-user-left">
-<div class="profile-avatar">{initials}</div>
+<div class="profile-avatar">{safe_initials}</div>
 <div class="profile-meta">
-<div class="profile-fullname">{twin.name}</div>
+<div class="profile-fullname">{safe_name}</div>
 <div class="profile-tagline">Financial Profile</div>
 </div>
 </div>
-<a href="/Settings?uid={twin.user_id}" target="_self" class="profile-settings-btn" title="Settings & Privacy">
+<a href="/Settings" target="_self" class="profile-settings-btn" title="Settings & Privacy">
 <i class="fa-solid fa-gear"></i>
 </a>
 </div>

@@ -337,11 +337,9 @@ if not twin:
     st.stop()
 
 # ── Pretrained Model Loader ──────────────────────────────────────────────────
-@st.cache_resource(show_spinner=False)
 def get_predictor(horizon: int):
-    predictor = FinancialPredictor()
-    loaded = predictor.load_only(horizon=horizon)
-    return predictor, loaded
+    from utils.cache import get_cached_predictor
+    return get_cached_predictor(horizon)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TWO-TAB STRUCTURE

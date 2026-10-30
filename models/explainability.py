@@ -402,8 +402,12 @@ class ForecastExplainer:
             (contributions sorted by |shap|, base_value)
         """
         try:
-            import shap
-            explainer   = shap.TreeExplainer(model)
+            try:
+                from utils.cache import get_cached_tree_explainer
+                explainer = get_cached_tree_explainer(model)
+            except Exception:
+                import shap
+                explainer = shap.TreeExplainer(model)
             shap_vals   = explainer.shap_values(X_user)
             base_value  = float(explainer.expected_value)
 

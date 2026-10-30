@@ -1,4 +1,5 @@
 import streamlit as st
+from html import escape as _he
 
 class PremiumLoader:
     """
@@ -142,8 +143,8 @@ class PremiumLoader:
         <div class="premium-loader-wrapper">
             <div class="premium-loader-card">
                 <div class="ai-pulse-icon"><i class="fa-solid fa-chart-line" style="color:#00D4FF;"></i></div>
-                <div class="loader-title">{self.title}</div>
-                <div class="loader-subtitle">{self.subtitle}</div>
+                <div class="loader-title">{_he(self.title)}</div>
+                <div class="loader-subtitle">{_he(self.subtitle)}</div>
                 
                 <div class="progress-track">
                     <div class="progress-fill"></div>

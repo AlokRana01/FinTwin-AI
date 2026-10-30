@@ -35,9 +35,8 @@ import numpy as np
 import pandas as pd
 from typing import Dict, Any, Optional, Tuple
 
-from xgboost import XGBRegressor
-from sklearn.model_selection import train_test_split, cross_val_score, KFold
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+# Heavy libraries (xgboost, sklearn) are imported lazily inside methods to keep
+# module import times near-instantaneous during Streamlit page navigation.
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 _MODEL_DIR          = os.path.join(os.path.dirname(__file__), "..", "data", "models")
@@ -146,8 +145,9 @@ def _build_training_data(df_population: pd.DataFrame, horizon: int) -> Tuple[pd.
     return X, y_sav, y_nw
 
 
-def _evaluate(model: XGBRegressor, X_test: pd.DataFrame, y_test: pd.Series) -> Dict[str, float]:
+def _evaluate(model: Any, X_test: pd.DataFrame, y_test: pd.Series) -> Dict[str, float]:
     """Computes MAE, RMSE, R² on the held-out test set."""
+    from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
     y_pred = model.predict(X_test)
     mae    = float(mean_absolute_error(y_test, y_pred))
     rmse   = float(np.sqrt(mean_squared_error(y_test, y_pred)))
@@ -174,8 +174,8 @@ class FinancialPredictor:
     }
 
     def __init__(self):
-        self.model_savings:   Optional[XGBRegressor] = None
-        self.model_net_worth: Optional[XGBRegressor] = None
+        self.model_savings:   Any = None
+        self.model_net_worth: Any = None
         self._metrics: Dict[str, Dict[str, float]]   = {}
         self._horizon: int = 6     # default, overridden on train
         self._is_fitted: bool = False
@@ -191,6 +191,9 @@ class FinancialPredictor:
             df_population : Population DataFrame from DBManager.get_population_features().
             horizon       : Prediction horizon in months (6 or 12).
         """
+        from xgboost import XGBRegressor
+        from sklearn.model_selection import train_test_split, cross_val_score, KFold
+
         self._horizon = horizon
         X, y_sav, y_nw = _build_training_data(df_population, horizon)
 
@@ -366,6 +369,7 @@ class FinancialPredictor:
 
     def load_model(self) -> None:
         """Loads pre-trained models and metrics from disk."""
+        from xgboost import XGBRegressor
         self.model_savings = XGBRegressor()
         self.model_savings.load_model(_SAVINGS_MODEL_PATH)
         self.model_net_worth = XGBRegressor()

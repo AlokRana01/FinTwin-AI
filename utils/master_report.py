@@ -181,8 +181,8 @@ def build_master_report(twin) -> bytes:
     # 12. Financial Personality
     # ---------------------------------------------------------------- #
     try:
-        from models.clustering import FinancialPersonalityClusterer
-        clusterer = FinancialPersonalityClusterer.load()
+        from utils.cache import get_cached_clusterer
+        clusterer = get_cached_clusterer()
         if clusterer.is_fitted():
             personality = clusterer.predict_personality(twin)
             report.add_section("12. Financial Personality")
@@ -194,8 +194,8 @@ def build_master_report(twin) -> bytes:
     # 13. Behaviour Analysis (peer comparison, if cohort data exists)
     # ---------------------------------------------------------------- #
     try:
-        from database.db_manager import DBManager
-        cohort_avg = DBManager.get_cohort_averages(twin.occupation)
+        from utils.cache import get_cached_cohort_averages
+        cohort_avg = get_cached_cohort_averages(twin.occupation)
         if cohort_avg:
             user_spend = {
                 "Rent": twin.rent, "Groceries": twin.groceries, "Utilities": twin.utilities,
@@ -213,9 +213,9 @@ def build_master_report(twin) -> bytes:
     # 14. Forecasting Results
     # ---------------------------------------------------------------- #
     try:
-        from models.predictor import FinancialPredictor
-        predictor = FinancialPredictor()
-        if predictor.load_only(horizon=6):
+        from utils.cache import get_cached_predictor
+        predictor, loaded = get_cached_predictor(horizon=6)
+        if loaded:
             pred_6 = predictor.predict(twin, horizon_months=6)
             report.add_section("14. Forecasting Results")
             report.add_key_value_grid({

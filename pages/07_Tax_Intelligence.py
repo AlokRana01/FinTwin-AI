@@ -6,6 +6,7 @@ deduction analysis, waterfall charts, regime recommendation, and actionable tax-
 """
 
 import streamlit as st
+from html import escape as _he
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
@@ -422,7 +423,7 @@ rec_card_class = "tax-rec-card" if rec == "Old Regime" else "tax-rec-card-blue"
 badge_color    = "#10B981" if rec == "Old Regime" else "#4F8CFF"
 active_icon    = "fa-solid fa-circle-check"
 
-rec_html = f"""<div class="{rec_card_class}"><div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 1.25rem;"><div style="display: flex; align-items: center; gap: 10px;"><span style="background: {badge_color}22; border: 1px solid {badge_color}; color: {badge_color}; border-radius: 8px; padding: 4px 14px; font-weight: 700; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px;"><i class="{active_icon}"></i> Recommended</span><span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.55rem; font-weight: 800; color: #F8FAFC;">{rec}</span></div><div style="text-align: right;"><div style="font-size: 0.8rem; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;">Estimated Annual Savings</div><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.65rem; font-weight: 800; color: {badge_color};">₹{savings:,.0f}</div></div></div><p style="color: #CBD5E1; font-size: 0.96rem; line-height: 1.6; margin: 0 0 1.25rem 0;">{result['recommendation_text']}</p><div style="display: flex; flex-wrap: wrap; gap: 16px; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 0.9rem; color: #94A3B8;"><span style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-wallet" style="color: {badge_color};"></i> Monthly Tax Savings: <strong style="color: #F8FAFC;">₹{monthly_savings:,.0f}</strong></span><span style="color: #64748B;">•</span><span style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-percent" style="color: {badge_color};"></i> Effective Tax Rate: <strong style="color: #F8FAFC;">{min(old.effective_rate, new.effective_rate):.2f}%</strong></span></div></div>"""
+rec_html = f"""<div class="{rec_card_class}"><div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 1.25rem;"><div style="display: flex; align-items: center; gap: 10px;"><span style="background: {badge_color}22; border: 1px solid {badge_color}; color: {badge_color}; border-radius: 8px; padding: 4px 14px; font-weight: 700; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px;"><i class="{active_icon}"></i> Recommended</span><span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.55rem; font-weight: 800; color: #F8FAFC;">{rec}</span></div><div style="text-align: right;"><div style="font-size: 0.8rem; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;">Estimated Annual Savings</div><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.65rem; font-weight: 800; color: {badge_color};">₹{savings:,.0f}</div></div></div><p style="color: #CBD5E1; font-size: 0.96rem; line-height: 1.6; margin: 0 0 1.25rem 0;">{_he(result['recommendation_text'])}</p><div style="display: flex; flex-wrap: wrap; gap: 16px; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 0.9rem; color: #94A3B8;"><span style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-wallet" style="color: {badge_color};"></i> Monthly Tax Savings: <strong style="color: #F8FAFC;">₹{monthly_savings:,.0f}</strong></span><span style="color: #64748B;">•</span><span style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-percent" style="color: {badge_color};"></i> Effective Tax Rate: <strong style="color: #F8FAFC;">{min(old.effective_rate, new.effective_rate):.2f}%</strong></span></div></div>"""
 st.markdown(rec_html, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -837,7 +838,7 @@ with tab4:
     for i, tip in enumerate(result["tips"], 1):
         st.markdown(f"""
         <div class="tax-tip-box">
-            <strong style="color: #60A5FA;">Strategy {i}:</strong> {tip}
+            <strong style="color: #60A5FA;">Strategy {i}:</strong> {_he(tip)}
         </div>
         """, unsafe_allow_html=True)
 

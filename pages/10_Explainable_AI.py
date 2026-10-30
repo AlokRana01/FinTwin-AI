@@ -17,9 +17,11 @@ import streamlit as st
 from utils.session import render_sidebar_user_selector
 from utils.visualizer import PlotlyVisualizer
 from models.explainability import ExplainableAI
-from models.predictor import FinancialPredictor
 from models.twin_engine import HealthScoreEngine
-from utils.pdf_report import FinTwinPDFReport
+
+def FinTwinPDFReport(*args, **kwargs):
+    from utils.pdf_report import FinTwinPDFReport as _RealPDF
+    return _RealPDF(*args, **kwargs)
 
 st.set_page_config(
     page_title="Explainable AI",
@@ -47,20 +49,27 @@ if not twin:
 # Cached Model & Explainability Computations (Preserving existing logic)
 # ══════════════════════════════════════════════════════════════════════════════
 
-@st.cache_resource(show_spinner="Loading pretrained XGBoost models for explanation…")
+def _twin_hash(t):
+    return (
+        f"{getattr(t, 'user_id', '')}:{getattr(t, 'total_income', 0)}:"
+        f"{getattr(t, 'basic_expenses', 0)}:{getattr(t, 'monthly_emi', 0)}:"
+        f"{getattr(t, 'sip_amount', 0)}:{getattr(t, 'net_worth', 0)}:"
+        f"{getattr(t, 'loan_amount', 0)}:{getattr(t, 'bank_savings', 0)}"
+    )
+
 def get_predictor():
-    predictor = FinancialPredictor()
-    predictor.load_only(horizon=6)
+    from utils.cache import get_cached_predictor
+    predictor, _ = get_cached_predictor(horizon=6)
     return predictor
 
 
-@st.cache_data(show_spinner="Analyzing forecast drivers…", hash_funcs={object: lambda x: str(getattr(x, 'user_id', id(x)))})
+@st.cache_data(show_spinner="Analyzing forecast drivers…", hash_funcs={object: _twin_hash})
 def compute_forecast_explanation(_twin, horizon: int):
     predictor = get_predictor()
     return ExplainableAI().explain_forecast(_twin, predictor, horizon=horizon)
 
 
-@st.cache_data(show_spinner="Computing health score explanation…", hash_funcs={object: lambda x: str(getattr(x, 'user_id', id(x)))})
+@st.cache_data(show_spinner="Computing health score explanation…", hash_funcs={object: _twin_hash})
 def compute_health_explanation(_twin):
     return ExplainableAI().explain_health_score(_twin)
 
@@ -341,7 +350,7 @@ with tab_factors:
                         border-radius: 10px; padding: 16px 20px; margin-bottom: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <div>
-                        <span style="font-weight: 700; font-size: 1.05rem; color: #F8FAFC;">{fname}</span>
+                        <span style="font-weight: 700; font-size: 1.05rem; color: #F8FAFC;">{html.escape(str(fname))}</span>
                         <span style="color: #94A3B8; font-size: 0.85rem; margin-left: 8px;">(₹{raw_val:,.0f}/mo)</span>
                     </div>
                     <div style="display: flex; gap: 8px;">
@@ -380,7 +389,7 @@ with tab_factors:
                     f"""
                     <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10B981;
                                 border-radius: 6px; padding: 10px 14px; margin-bottom: 8px;">
-                        <span style="font-weight: 600; color: #F3F4F6;">{pf['feature']}</span>
+                        <span style="font-weight: 600; color: #F3F4F6;">{html.escape(str(pf['feature']))}</span>
                         <div style="color: #94A3B8; font-size: 0.84rem; margin-top: 2px;">
                             Contributing positively to your forecast.
                         </div>
@@ -400,7 +409,7 @@ with tab_factors:
                     f"""
                     <div style="background: rgba(239, 68, 68, 0.08); border-left: 3px solid #EF4444;
                                 border-radius: 6px; padding: 10px 14px; margin-bottom: 8px;">
-                        <span style="font-weight: 600; color: #F3F4F6;">{nf['feature']}</span>
+                        <span style="font-weight: 600; color: #F3F4F6;">{html.escape(str(nf['feature']))}</span>
                         <div style="color: #94A3B8; font-size: 0.84rem; margin-top: 2px;">
                             Creating a drag on your forecast.
                         </div>

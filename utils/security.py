@@ -99,7 +99,15 @@ def sanitize_html_output(text: str) -> str:
     Escape text for safe rendering inside unsafe_allow_html=True HTML blocks.
     Use this on any user-controlled string embedded into an HTML f-string.
     """
-    return _he(str(text))
+    return _he(str(text), quote=True)
+
+
+def escape_html(value: object) -> str:
+    """
+    Convenience alias for escaping dynamic content destined for HTML contexts.
+    Quotes attribute-breaking characters (' and ") safely.
+    """
+    return _he(str(value), quote=True)
 
 
 # ── Validation ───────────────────────────────────────────────────────────────
@@ -179,23 +187,261 @@ def sanitize_chat_message(text: str) -> str:
 
 # ── Rate Limiter ─────────────────────────────────────────────────────────────
 
+import abc
+import os
+import logging
+
+_sec_logger = logging.getLogger(__name__)
+
+
+class BaseRateLimiterBackend(abc.ABC):
+    """Abstract interface for rate limiting backends."""
+
+    @abc.abstractmethod
+    def is_locked(self, identifier: str, max_attempts: int, window_seconds: int) -> Tuple[bool, str]:
+        pass
+
+    @abc.abstractmethod
+    def record_failure(self, identifier: str, window_seconds: int) -> None:
+        pass
+
+    @abc.abstractmethod
+    def reset(self, identifier: str) -> None:
+        pass
+
+
+class InMemoryRateLimiterBackend(BaseRateLimiterBackend):
+    """
+    Thread-safe in-memory rate limiter backend using a local dictionary.
+    Suitable for local development and single-process unit testing.
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._attempts: dict[str, list[float]] = {}
+
+    def _clean(self, identifier: str, now: float, window_seconds: int) -> list[float]:
+        recent = [t for t in self._attempts.get(identifier, []) if now - t < window_seconds]
+        self._attempts[identifier] = recent
+        return recent
+
+    def is_locked(self, identifier: str, max_attempts: int, window_seconds: int) -> Tuple[bool, str]:
+        with self._lock:
+            now = time.time()
+            recent = self._clean(identifier, now, window_seconds)
+            if len(recent) >= max_attempts:
+                oldest = min(recent)
+                wait_secs = int(window_seconds - (now - oldest))
+                minutes = max(1, wait_secs // 60)
+                return True, (
+                    f"Too many failed login attempts. "
+                    f"Please wait {minutes} minute(s) before trying again."
+                )
+        return False, ""
+
+    def record_failure(self, identifier: str, window_seconds: int) -> None:
+        with self._lock:
+            now = time.time()
+            self._clean(identifier, now, window_seconds)
+            self._attempts.setdefault(identifier, []).append(now)
+
+    def reset(self, identifier: str) -> None:
+        with self._lock:
+            self._attempts.pop(identifier, None)
+
+
+class SQLiteRateLimiterBackend(BaseRateLimiterBackend):
+    """
+    Thread-safe and process-safe rate limiter backend backed by SQLite.
+    Survives application restarts and coordinates rate limits across multiple
+    Streamlit worker processes sharing the database.
+    """
+
+    def __init__(self):
+        self._table_ensured = False
+        self._in_memory_fallback = InMemoryRateLimiterBackend()
+
+    def _ensure_table(self):
+        if self._table_ensured:
+            return
+        try:
+            from database.connection import get_db_cursor
+            with get_db_cursor() as cursor:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS rate_limits (
+                        identifier TEXT NOT NULL,
+                        attempt_timestamp REAL NOT NULL
+                    );
+                """)
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_rate_limits_id_time
+                    ON rate_limits (identifier, attempt_timestamp);
+                """)
+            self._table_ensured = True
+        except Exception as e:
+            _sec_logger.warning(f"Could not initialize rate_limits table in SQLite: {e}")
+
+    def is_locked(self, identifier: str, max_attempts: int, window_seconds: int) -> Tuple[bool, str]:
+        self._ensure_table()
+        now = time.time()
+        cutoff = now - window_seconds
+        try:
+            from database.connection import get_db_cursor
+            with get_db_cursor() as cursor:
+                cursor.execute(
+                    "SELECT COUNT(*), MIN(attempt_timestamp) FROM rate_limits WHERE identifier = ? AND attempt_timestamp >= ?",
+                    (identifier, cutoff),
+                )
+                row = cursor.fetchone()
+                if row and row[0] >= max_attempts:
+                    oldest = row[1] if row[1] is not None else cutoff
+                    wait_secs = int(window_seconds - (now - oldest))
+                    minutes = max(1, wait_secs // 60)
+                    return True, (
+                        f"Too many failed login attempts. "
+                        f"Please wait {minutes} minute(s) before trying again."
+                    )
+            return False, ""
+        except Exception as e:
+            _sec_logger.error(f"SQLiteRateLimiter error in is_locked for {identifier}: {e}; falling back to memory")
+            return self._in_memory_fallback.is_locked(identifier, max_attempts, window_seconds)
+
+    def record_failure(self, identifier: str, window_seconds: int) -> None:
+        self._ensure_table()
+        now = time.time()
+        try:
+            from database.connection import get_db_cursor
+            with get_db_cursor() as cursor:
+                cursor.execute(
+                    "INSERT INTO rate_limits (identifier, attempt_timestamp) VALUES (?, ?)",
+                    (identifier, now),
+                )
+                # Opportunistic maintenance cleanup of stale records
+                cursor.execute(
+                    "DELETE FROM rate_limits WHERE attempt_timestamp < ?",
+                    (now - (window_seconds * 2),),
+                )
+            self._in_memory_fallback.record_failure(identifier, window_seconds)
+        except Exception as e:
+            _sec_logger.error(f"SQLiteRateLimiter error recording failure: {e}; falling back to memory")
+            self._in_memory_fallback.record_failure(identifier, window_seconds)
+
+    def reset(self, identifier: str) -> None:
+        self._ensure_table()
+        try:
+            from database.connection import get_db_cursor
+            with get_db_cursor() as cursor:
+                cursor.execute("DELETE FROM rate_limits WHERE identifier = ?", (identifier,))
+            self._in_memory_fallback.reset(identifier)
+        except Exception as e:
+            _sec_logger.error(f"SQLiteRateLimiter error resetting identifier: {e}")
+            self._in_memory_fallback.reset(identifier)
+
+
+class RedisRateLimiterBackend(BaseRateLimiterBackend):
+    """
+    Centralized distributed rate limiter backend using Redis atomic sliding-window.
+    If Redis is unavailable or unconfigured, securely falls back to SQLiteRateLimiterBackend.
+    """
+
+    def __init__(self, redis_url: str):
+        self._redis_url = redis_url
+        self._client = None
+        self._sqlite_fallback = SQLiteRateLimiterBackend()
+        self._init_client()
+
+    def _init_client(self):
+        try:
+            import redis  # type: ignore[import-not-found] # pyright: ignore[reportMissingImports]
+            self._client = redis.Redis.from_url(self._redis_url, socket_connect_timeout=2.0)
+            self._client.ping()
+            _sec_logger.info("RedisRateLimiterBackend connected successfully.")
+        except Exception:
+            _sec_logger.warning("RedisRateLimiter initialization failed or unavailable; falling back to SQLite backend.")
+            self._client = None
+
+    def is_locked(self, identifier: str, max_attempts: int, window_seconds: int) -> Tuple[bool, str]:
+        if not self._client:
+            return self._sqlite_fallback.is_locked(identifier, max_attempts, window_seconds)
+        try:
+            now = time.time()
+            cutoff = now - window_seconds
+            key = f"ftw_ratelimit:{identifier}"
+            pipe = self._client.pipeline()
+            pipe.zremrangebyscore(key, 0, cutoff)
+            pipe.zcard(key)
+            pipe.zrange(key, 0, 0, withscores=True)
+            res = pipe.execute()
+            count = res[1]
+            if count >= max_attempts:
+                oldest_score = res[2][0][1] if res[2] else cutoff
+                wait_secs = int(window_seconds - (now - oldest_score))
+                minutes = max(1, wait_secs // 60)
+                return True, (
+                    f"Too many failed login attempts. "
+                    f"Please wait {minutes} minute(s) before trying again."
+                )
+            return False, ""
+        except Exception as e:
+            _sec_logger.warning(f"RedisRateLimiter error during is_locked: {e}; falling back to SQLite")
+            return self._sqlite_fallback.is_locked(identifier, max_attempts, window_seconds)
+
+    def record_failure(self, identifier: str, window_seconds: int) -> None:
+        if not self._client:
+            self._sqlite_fallback.record_failure(identifier, window_seconds)
+            return
+        try:
+            now = time.time()
+            cutoff = now - window_seconds
+            key = f"ftw_ratelimit:{identifier}"
+            pipe = self._client.pipeline()
+            pipe.zremrangebyscore(key, 0, cutoff)
+            pipe.zadd(key, {str(now): now})
+            pipe.expire(key, window_seconds * 2)
+            pipe.execute()
+        except Exception as e:
+            _sec_logger.warning(f"RedisRateLimiter error during record_failure: {e}; falling back to SQLite")
+            self._sqlite_fallback.record_failure(identifier, window_seconds)
+
+    def reset(self, identifier: str) -> None:
+        if not self._client:
+            self._sqlite_fallback.reset(identifier)
+            return
+        try:
+            key = f"ftw_ratelimit:{identifier}"
+            self._client.delete(key)
+        except Exception as e:
+            _sec_logger.warning(f"RedisRateLimiter error during reset: {e}; falling back to SQLite")
+            self._sqlite_fallback.reset(identifier)
+
+
 class RateLimiter:
     """
-    Thread-safe in-memory rate limiter for login brute-force protection.
-
-    Tracks failed login attempts per identifier (email address).
-    After _RATE_MAX_ATTEMPTS failures within _RATE_LOCK_WINDOW seconds,
-    subsequent attempts are blocked with exponential backoff messaging.
-
-    State resets automatically after _RATE_LOCK_WINDOW seconds of no failures.
-    Accounts are NEVER permanently locked — only temporarily blocked.
+    Unified rate limiter interface for login brute-force protection.
+    Configurable via RATE_LIMIT_BACKEND ('sqlite', 'memory', or 'redis').
+    Defaults to 'sqlite' for process-safe and restart-persistent protection.
     """
 
     _instance: "RateLimiter | None" = None
     _lock = threading.Lock()
 
-    # Map: identifier -> list of Unix timestamps of recent failures
-    _attempts: dict[str, list[float]] = {}
+    def __init__(self, backend: BaseRateLimiterBackend | None = None):
+        if backend is not None:
+            self._backend = backend
+        else:
+            self._backend = self._create_default_backend()
+
+    @classmethod
+    def _create_default_backend(cls) -> BaseRateLimiterBackend:
+        backend_type = os.environ.get("RATE_LIMIT_BACKEND", "sqlite").strip().lower()
+        redis_url = os.environ.get("REDIS_URL", "").strip()
+
+        if backend_type == "memory":
+            return InMemoryRateLimiterBackend()
+        elif backend_type == "redis" or (redis_url and backend_type != "sqlite"):
+            return RedisRateLimiterBackend(redis_url or "redis://localhost:6379/0")
+        else:
+            return SQLiteRateLimiterBackend()
 
     @classmethod
     def get(cls) -> "RateLimiter":
@@ -206,42 +452,24 @@ class RateLimiter:
                     cls._instance = cls()
         return cls._instance
 
-    def _clean(self, identifier: str, now: float) -> list[float]:
-        """Return only recent failures within the lockout window."""
-        recent = [t for t in self._attempts.get(identifier, [])
-                  if now - t < _RATE_LOCK_WINDOW]
-        self._attempts[identifier] = recent
-        return recent
+    def set_backend(self, backend: BaseRateLimiterBackend) -> None:
+        """Sets the active rate limiter backend (e.g., for testing or reconfiguration)."""
+        self._backend = backend
+
+    def get_backend(self) -> BaseRateLimiterBackend:
+        return self._backend
 
     def is_locked(self, identifier: str) -> Tuple[bool, str]:
-        """
-        Check if identifier is currently rate-limited.
-        Returns (is_blocked, user_facing_message).
-        """
-        with self._lock:
-            now = time.time()
-            recent = self._clean(identifier, now)
-            if len(recent) >= _RATE_MAX_ATTEMPTS:
-                oldest = min(recent)
-                wait_secs = int(_RATE_LOCK_WINDOW - (now - oldest))
-                minutes = max(1, wait_secs // 60)
-                return True, (
-                    f"Too many failed login attempts. "
-                    f"Please wait {minutes} minute(s) before trying again."
-                )
-        return False, ""
+        """Check if identifier is currently rate-limited."""
+        return self._backend.is_locked(identifier, _RATE_MAX_ATTEMPTS, _RATE_LOCK_WINDOW)
 
     def record_failure(self, identifier: str) -> None:
         """Record a failed login attempt for the given identifier."""
-        with self._lock:
-            now = time.time()
-            self._clean(identifier, now)
-            self._attempts.setdefault(identifier, []).append(now)
+        self._backend.record_failure(identifier, _RATE_LOCK_WINDOW)
 
     def reset(self, identifier: str) -> None:
         """Clear all recorded failures for the identifier (on successful login)."""
-        with self._lock:
-            self._attempts.pop(identifier, None)
+        self._backend.reset(identifier)
 
 
 # ── Session helpers ───────────────────────────────────────────────────────────

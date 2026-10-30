@@ -6,6 +6,7 @@ multi-goal portfolio optimizer, and cross-goal comparison analytics.
 """
 
 import datetime
+from html import escape as _he
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -16,7 +17,9 @@ from utils.goal_engine import (
     GoalType, GoalInput, GoalResult, GoalEngine,
     MultiGoalPlanner, GOAL_CONFIG,
 )
-from utils.pdf_report import FinTwinPDFReport
+def FinTwinPDFReport(*args, **kwargs):
+    from utils.pdf_report import FinTwinPDFReport as _RealPDF
+    return _RealPDF(*args, **kwargs)
 
 # ── Page Configuration ───────────────────────────────────────────────────────
 st.set_page_config(
@@ -573,7 +576,7 @@ with tab1:
         # ── Primary Planning Results ──
         st.markdown(f"""
         <div class="goal-section-header">
-            <h3 class="goal-section-title"><i class="fa-solid fa-chart-line" style="color: #4F8CFF; font-size: 1.1rem;"></i> Planning Result — {result.goal_name}</h3>
+            <h3 class="goal-section-title"><i class="fa-solid fa-chart-line" style="color: #4F8CFF; font-size: 1.1rem;"></i> Planning Result — {_he(result.goal_name)}</h3>
             <p class="goal-section-desc">Key requirements and projected horizon for your milestone.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -693,11 +696,11 @@ with tab1:
             st.dataframe(pd.DataFrame(m_rows), use_container_width=True, hide_index=True)
 
         with m_col2:
-            st.markdown(f"<div style='font-size: 0.95rem; font-weight: 700; color: #F8FAFC; margin-bottom: 0.75rem;'>{result.goal_name} Insights & Tips</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='font-size: 0.95rem; font-weight: 700; color: #F8FAFC; margin-bottom: 0.75rem;'>{_he(result.goal_name)} Insights & Tips</div>", unsafe_allow_html=True)
             for tip in result.tips:
                 st.markdown(f"""
                 <div class="goal-tip-box" style="border-left-color: {cfg['color']};">
-                    <i class="fa-solid fa-lightbulb" style="color: {cfg['color']}; margin-right: 6px;"></i> {tip}
+                    <i class="fa-solid fa-lightbulb" style="color: {cfg['color']}; margin-right: 6px;"></i> {_he(tip)}
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -753,7 +756,7 @@ with tab1:
                     </div>
                     <div>
                         <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.05rem; font-weight: 700; color: #F8FAFC; margin-bottom: 3px;">
-                            Download {result.goal_name} Plan Report (PDF)
+                            Download {_he(result.goal_name)} Plan Report (PDF)
                         </div>
                         <div style="color: #94A3B8; font-size: 0.88rem; line-height: 1.45;">
                             Comprehensive export including trajectory schedules, SIP requirement, and milestone dates.
@@ -1206,7 +1209,7 @@ with tab2:
             <div style="margin-bottom: 6px;"><i class="fa-solid fa-circle-check" style="font-size: 1.75rem; color: #10B981;"></i></div>
             <div style="color: #10B981; font-weight: 700; font-size: 1.05rem; margin-bottom: 4px;">Comfortably Achievable</div>
             <div style="color: #CBD5E1; font-size: 0.9rem;">
-                {', '.join([r.goal_name for r in feasible]) or '—'}
+                {', '.join([_he(r.goal_name) for r in feasible]) or '—'}
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1216,7 +1219,7 @@ with tab2:
             <div style="margin-bottom: 6px;"><i class="fa-solid fa-triangle-exclamation" style="font-size: 1.75rem; color: #F59E0B;"></i></div>
             <div style="color: #F59E0B; font-weight: 700; font-size: 1.05rem; margin-bottom: 4px;">Stretch Goals</div>
             <div style="color: #CBD5E1; font-size: 0.9rem;">
-                {', '.join([r.goal_name for r in stretch]) or '—'}
+                {', '.join([_he(r.goal_name) for r in stretch]) or '—'}
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1226,7 +1229,7 @@ with tab2:
             <div style="margin-bottom: 6px;"><i class="fa-solid fa-clock-rotate-left" style="font-size: 1.75rem; color: #EF4444;"></i></div>
             <div style="color: #EF4444; font-weight: 700; font-size: 1.05rem; margin-bottom: 4px;">Need Longer Horizon</div>
             <div style="color: #CBD5E1; font-size: 0.9rem;">
-                {', '.join([r.goal_name for r in hard]) or '—'}
+                {', '.join([_he(r.goal_name) for r in hard]) or '—'}
             </div>
         </div>
         """, unsafe_allow_html=True)

@@ -15,9 +15,9 @@ Tabs:
 """
 
 import streamlit as st
+from html import escape as _he
 from utils.session import render_sidebar_user_selector
 from utils.visualizer import PlotlyVisualizer
-from utils.pdf_report import FinTwinPDFReport
 from models.clustering import FinancialPersonalityClusterer, PERSONALITY_META
 
 st.set_page_config(page_title="Financial Personality", page_icon="assets/logos/favicon.svg", layout="wide")
@@ -44,9 +44,9 @@ COLOR_MAP = {meta_key: meta["color"] for meta_key, meta in PERSONALITY_META.item
 # ── Load pretrained clusterer (trained OFFLINE by training/train_offline.py) ──
 # The live app never re-fits KMeans on database rows — it only loads the
 # saved centroids/scaler artifact and predicts the current user's cluster.
-@st.cache_resource(show_spinner="Loading personality model...")
 def load_clusterer():
-    return FinancialPersonalityClusterer.load()
+    from utils.cache import get_cached_clusterer
+    return get_cached_clusterer()
 
 clusterer = load_clusterer()
 
@@ -86,10 +86,10 @@ with tab1:
                         padding:28px 24px;margin-bottom:12px;text-align:center;">
                 <div style="font-size:3.2rem;margin-bottom:8px">{meta['icon']}</div>
                 <div style="font-size:1.6rem;font-weight:800;color:{meta['color']}">
-                    {personality}
+                    {_he(personality)}
                 </div>
                 <div style="font-size:0.9rem;color:#94A3B8;margin-top:4px;font-style:italic">
-                    {meta['tagline']}
+                    {_he(meta['tagline'])}
                 </div>
             </div>
             """,
@@ -132,7 +132,8 @@ with tab2:
         f"(see `training/train_offline.py`). Your position = **{personality}**."
     )
 
-    stats_df = clusterer.load_saved_cluster_benchmarks()
+    from utils.cache import get_cached_cluster_benchmarks
+    stats_df = get_cached_cluster_benchmarks()
 
     if stats_df.empty:
         st.warning(
@@ -214,9 +215,9 @@ with tab2:
                                 padding:10px;text-align:center;background:{pmeta['color']}11;">
                         <div style="font-size:1.5rem">{pmeta['icon']}</div>
                         <div style="font-size:0.78rem;font-weight:700;color:{pmeta['color']};
-                                    margin-top:4px">{label}</div>
+                                    margin-top:4px">{_he(label)}</div>
                         <div style="font-size:0.7rem;color:#94A3B8;margin-top:3px">
-                            {pmeta['tagline']}
+                            {_he(pmeta['tagline'])}
                         </div>
                     </div>
                     """,
@@ -226,6 +227,7 @@ with tab2:
     st.markdown("<div style='margin-top: 2.25rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1.5rem;'></div>", unsafe_allow_html=True)
 
     try:
+        from utils.pdf_report import FinTwinPDFReport
         _pdf_pers = FinTwinPDFReport(
             report_title="Financial Personality Report",
             user_id=twin.user_id,

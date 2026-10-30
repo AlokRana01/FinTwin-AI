@@ -21,6 +21,7 @@ only injects an overlay via `st.markdown`.
 """
 
 import base64
+from html import escape as _he
 import os
 
 import streamlit as st
@@ -60,7 +61,7 @@ def render_startup_splash(
 
     logo_src = _load_logo_base64(current_dir)
     logo_html = (
-        f'<img src="{logo_src}" class="ft-splash-logo-img" alt="{title} logo" />'
+        f'<img src="{logo_src}" class="ft-splash-logo-img" alt="{_he(title)} logo" />'
         if logo_src
         else '<div class="ft-splash-logo-fallback"><i class="fa-solid fa-shield-halved"></i></div>'
     )
@@ -234,8 +235,8 @@ def render_startup_splash(
         <div class="ft-splash-logo-ring">
             {logo_html}
         </div>
-        <h1 class="ft-splash-title">{title}</h1>
-        <p class="ft-splash-subtitle">{subtitle}</p>
+        <h1 class="ft-splash-title">{_he(title)}</h1>
+        <p class="ft-splash-subtitle">{_he(subtitle)}</p>
         <div class="ft-splash-progress-track">
             <div class="ft-splash-progress-fill"></div>
         </div>
